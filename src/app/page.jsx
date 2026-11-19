@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowLeftRight, RefreshCw, LogIn } from 'lucide-react';
+import { Sparkles, RefreshCw, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
+import { OPPO_PHONES, OPPO_TYPES } from '../data/oppo';
+import { COMPETITOR_PHONES, COMPETITOR_BRANDS } from '../data/competitors';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -23,11 +25,11 @@ const sectionVariants = {
 };
 
 export default function Home() {
-  const [oppoPhones, setOppoPhones] = useState([]);
-  const [compPhones, setCompPhones] = useState([]);
-  const [oppoTypes, setOppoTypes] = useState([]);
-  const [compBrands, setCompBrands] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Static data - no API calls needed
+  const oppoPhones = OPPO_PHONES;
+  const compPhones = COMPETITOR_PHONES;
+  const oppoTypes = OPPO_TYPES;
+  const compBrands = COMPETITOR_BRANDS;
 
   // Selection state (lifted from SelectionPanel)
   const [oppoType, setOppoType] = useState('');
@@ -35,45 +37,12 @@ export default function Home() {
   const [compBrand, setCompBrand] = useState('');
   const [compModel, setCompModel] = useState(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [oppoRes, compRes] = await Promise.all([
-          fetch('/api/phones?category=oppo'),
-          fetch('/api/phones?category=competitors'),
-        ]);
-        const oppo = await oppoRes.json();
-        const comp = await compRes.json();
-        setOppoPhones(oppo);
-        setCompPhones(comp);
-        setOppoTypes([...new Set(oppo.map(p => p.type))].sort());
-        setCompBrands([...new Set(comp.map(p => p.brand))].sort());
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
   const resetAll = () => {
     setOppoType('');
     setOppoModel(null);
     setCompBrand('');
     setCompModel(null);
   };
-
-  if (loading) {
-    return (
-      <div className="relative min-h-screen flex items-center justify-center">
-        <div className="sky-gradient" aria-hidden="true" />
-        <div className="water-layer" aria-hidden="true" />
-        <div className="floating-orbs" aria-hidden="true" />
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   return (
     <div className="relative min-h-screen flex flex-col">

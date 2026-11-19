@@ -1,4 +1,6 @@
 import { getSupabaseAdmin } from '../../../lib/supabase';
+import { OPPO_PHONES } from '../../../data/oppo';
+import { COMPETITOR_PHONES } from '../../../data/competitors';
 
 const TABLE_OPPO = 'oppo_phones';
 const TABLE_COMPETITORS = 'competitor_phones';
@@ -51,8 +53,15 @@ export async function GET(request) {
 
   const supabaseAdmin = getSupabaseAdmin();
 
+  // Fallback to static data if Supabase not configured
   if (!supabaseAdmin) {
-    return Response.json({ error: 'Database not configured' }, { status: 500 });
+    if (category === 'oppo') {
+      return Response.json(OPPO_PHONES);
+    }
+    if (category === 'competitors') {
+      return Response.json(COMPETITOR_PHONES);
+    }
+    return Response.json({ error: 'Invalid category' }, { status: 400 });
   }
 
   if (category === 'oppo') {

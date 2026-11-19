@@ -4,12 +4,13 @@ import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, Lock, User, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Smartphone, Lock, User, AlertCircle, Eye, EyeOff, CheckCircle2, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin';
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
   const error = searchParams.get('error');
 
   const [username, setUsername] = useState('');
@@ -78,6 +79,14 @@ function LoginForm() {
       >
         {/* Header */}
         <div className="text-center mb-10">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-4"
+            aria-label="Kembali ke halaman utama"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Kembali</span>
+          </Link>
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -86,8 +95,8 @@ function LoginForm() {
           >
             <Smartphone className="w-10 h-10" />
           </motion.div>
-          <h1 className="text-3xl font-bold gradient-text tracking-tight">Admin Portal</h1>
-          <p className="text-muted-foreground mt-2 text-base">Kelola data smartphone OPPO & Kompetitor</p>
+          <h1 className="text-3xl font-bold gradient-text tracking-tight">Masuk Pengguna</h1>
+          <p className="text-muted-foreground mt-2 text-base">Bandingkan smartphone OPPO vs Kompetitor</p>
         </div>
 
         {/* Alert Messages */}
@@ -218,7 +227,7 @@ function LoginForm() {
                 </>
               ) : (
                 <>
-                  <span>Masuk ke Admin</span>
+                  <span>Masuk ke Perbandingan</span>
                   <motion.div
                     animate={{ x: [0, 4, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
@@ -233,6 +242,19 @@ function LoginForm() {
             </motion.button>
           </motion.div>
         </form>
+
+        {/* Admin Link */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.4 }}
+          className="mt-6 text-center text-sm text-muted-foreground"
+        >
+          Butuh akses admin?{' '}
+          <Link href="/admin/login" className="text-primary hover:underline font-medium">
+            Login Admin
+          </Link>
+        </motion.p>
 
         {/* Footer */}
         <motion.p
