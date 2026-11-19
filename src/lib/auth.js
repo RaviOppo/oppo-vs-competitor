@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import bcrypt from 'bcryptjs';
-import { supabaseAdmin } from './supabase';
+import { getSupabaseAdmin } from './supabase';
 
 // Inline credentials provider to avoid import issues
 const CredentialsProvider = (options) => ({
@@ -20,6 +20,7 @@ export const authOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        const supabaseAdmin = getSupabaseAdmin();
         if (!supabaseAdmin) {
           console.error('Supabase admin client not configured');
           return null;

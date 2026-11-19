@@ -4,16 +4,26 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Lazy initialization - only create client when needed
+let _supabase = null;
+let _supabaseAdmin = null;
+
+export function getSupabase() {
+  if (!_supabase && supabaseUrl && supabaseAnonKey) {
+    _supabase = createClient(supabaseUrl, supabaseAnonKey);
+  }
+  return _supabase;
 }
 
-// Client for browser/client-side usage (with anon key)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Admin client for server-side operations (with service role key - bypasses RLS)
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey, {
+export function getSupabaseAdmin() {
+  if (!_supabaseAdmin && supabaseUrl && supabaseServiceKey) {
+    _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
-    })
-  : null;
+    });
+  }
+  return _supabaseAdmin;
+}
+
+// Backward compatibility - return null if not configured
+export const supabase = getSupabase();
+export const supabaseAdmin = getSupabaseAdmin();

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../../../lib/supabase';
+import { getSupabaseAdmin } from '../../../lib/supabase';
 
 const TABLE_OPPO = 'oppo_phones';
 const TABLE_COMPETITORS = 'competitor_phones';
@@ -48,6 +48,8 @@ function mapCompetitorFromDb(row) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
+
+  const supabaseAdmin = getSupabaseAdmin();
 
   if (!supabaseAdmin) {
     return Response.json({ error: 'Database not configured' }, { status: 500 });
