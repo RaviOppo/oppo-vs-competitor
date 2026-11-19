@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, RefreshCw, LogIn } from 'lucide-react';
+import { Sparkles, RefreshCw, LogIn, Shield } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
@@ -103,10 +103,10 @@ export default function Home() {
             </div>
             <motion.div variants={itemVariants} style={{ transitionDelay: '200ms' }}>
               <Link
-                href="/login"
-                className="glass-strong rounded-xl border border-primary/30 bg-primary/5 text-primary px-5 py-2.5 font-medium hover:bg-primary/10 transition-all flex items-center gap-2"
+                href="/admin/login"
+                className="glass-strong rounded-xl border border-secondary/30 bg-secondary/5 text-secondary px-5 py-2.5 font-medium hover:bg-secondary/10 transition-all flex items-center gap-2"
               >
-                <LogIn className="w-4 h-4" />
+                <Shield className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin Login</span>
               </Link>
             </motion.div>
