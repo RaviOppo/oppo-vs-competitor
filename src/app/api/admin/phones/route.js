@@ -1,13 +1,15 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { getOppoPhonesSync, getCompetitorPhonesSync, saveOppoPhones, saveCompetitorPhones } from '../../../../lib/data-server';
+import { getOppoPhonesSync, getCompetitorPhonesSync, saveOppoPhones, saveCompetitorPhones, deleteOppoPhone, deleteCompetitorPhone } from '../../../../lib/data-server';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return new Response('Unauthorized', { status: 401 });
 
-  const oppo = getOppoPhonesSync();
-  const competitors = getCompetitorPhonesSync();
+  const [oppo, competitors] = await Promise.all([
+    getOppoPhonesSync(),
+    getCompetitorPhonesSync(),
+  ]);
   return Response.json({ oppo, competitors });
 }
 
@@ -18,20 +20,20 @@ export async function POST(request) {
   const { category, ...phone } = await request.json();
 
   if (category === 'oppo') {
-    const phones = getOppoPhonesSync();
+    const phones = await getOppoPhonesSync();
     if (phones.find(p => p.id === phone.id)) {
       return Response.json({ error: 'ID sudah ada' }, { status: 400 });
     }
     phones.push(phone);
-    saveOppoPhones(phones);
+    await saveOppoPhones(phones);
     return Response.json(phones);
   } else {
-    const phones = getCompetitorPhonesSync();
+    const phones = await getCompetitorPhonesSync();
     if (phones.find(p => p.id === phone.id)) {
       return Response.json({ error: 'ID sudah ada' }, { status: 400 });
     }
     phones.push(phone);
-    saveCompetitorPhones(phones);
+    await saveCompetitorPhones(phones);
     return Response.json(phones);
   }
 }
@@ -43,15 +45,15 @@ export async function PUT(request) {
   const { category, ...phone } = await request.json();
 
   if (category === 'oppo') {
-    let phones = getOppoPhonesSync();
-    phones = phones.map(p => p.id === phone.id ? phone : p);
-    saveOppoPhones(phones);
-    return Response.json(phones);
+    const phones = await getOppoPhonesSync();
+    const updated = phones.map(p => p.id === phone.id ? phone : p);
+    await saveOppoPhones(updated);
+    return Response.json(updated);
   } else {
-    let phones = getCompetitorPhonesSync();
-    phones = phones.map(p => p.id === phone.id ? phone : p);
-    saveCompetitorPhones(phones);
-    return Response.json(phones);
+    const phones = await getCompetitorPhonesSync();
+    const updated = phones.map(p => p.id === phone.id ? phone : p);
+    await saveCompetitorPhones(updated);
+    return Response.json(updated);
   }
 }
 
@@ -62,14 +64,12 @@ export async function DELETE(request) {
   const { id, category } = await request.json();
 
   if (category === 'oppo') {
-    let phones = getOppoPhonesSync();
-    phones = phones.filter(p => p.id !== id);
-    saveOppoPhones(phones);
+    await deleteOppoPhone(id);
+    const phones = await getOppoPhonesSync();
     return Response.json(phones);
   } else {
-    let phones = getCompetitorPhonesSync();
-    phones = phones.filter(p => p.id !== id);
-    saveCompetitorPhones(phones);
+    await deleteCompetitorPhone(id);
+    const phones = await getCompetitorPhonesSync();
     return Response.json(phones);
   }
 }

@@ -1,26 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import TypeSelector from './TypeSelector';
 import ModelSelector from './ModelSelector';
 import BrandSelector from './BrandSelector';
 import PhoneCard from './PhoneCard';
 
-export default function SelectionPanel({ oppoPhones, compPhones, oppoTypes, compBrands }) {
-  const [oppoType, setOppoType] = useState('');
-  const [oppoModel, setOppoModel] = useState(null);
-  const [compBrand, setCompBrand] = useState('');
-  const [compModel, setCompModel] = useState(null);
-
-  const resetAll = () => {
-    setOppoType('');
-    setOppoModel(null);
-    setCompBrand('');
-    setCompModel(null);
-  };
-
+export default function SelectionPanel({
+  oppoPhones,
+  compPhones,
+  oppoTypes,
+  compBrands,
+  oppoType,
+  setOppoType,
+  oppoModel,
+  setOppoModel,
+  compBrand,
+  setCompBrand,
+  compModel,
+  setCompModel,
+  resetAll,
+}) {
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       {/* OPPO Side */}

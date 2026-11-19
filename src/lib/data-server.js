@@ -1,30 +1,157 @@
-import fs from 'fs';
-import path from 'path';
+import { supabaseAdmin } from './supabase';
 
-const OPPO_FILE = path.join(process.cwd(), 'src/data/oppo.json');
-const COMPETITORS_FILE = path.join(process.cwd(), 'src/data/competitors.json');
+const TABLE_OPPO = 'oppo_phones';
+const TABLE_COMPETITORS = 'competitor_phones';
 
-function readJson(file) {
-  if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file, 'utf-8'));
+function mapOppoFromDb(row) {
+  return {
+    id: row.id,
+    brand: row.brand,
+    model: row.model,
+    type: row.type,
+    harga: row.harga,
+    rearCamera: row.rear_camera,
+    selfieCamera: row.selfie_camera,
+    layar: row.layar,
+    speaker: row.speaker,
+    baterai: row.baterai,
+    ramRom: row.ram_rom,
+    sertifikasi: row.sertifikasi,
+    chipset: row.chipset,
+    os: row.os,
+    aiFitur: row.ai_fitur,
+    fiturKamera: row.fitur_kamera,
+  };
 }
 
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+function mapOppoToDb(phone) {
+  return {
+    id: phone.id,
+    brand: phone.brand,
+    model: phone.model,
+    type: phone.type,
+    harga: phone.harga,
+    rear_camera: phone.rearCamera,
+    selfie_camera: phone.selfieCamera,
+    layar: phone.layar,
+    speaker: phone.speaker,
+    baterai: phone.baterai,
+    ram_rom: phone.ramRom,
+    sertifikasi: phone.sertifikasi,
+    chipset: phone.chipset,
+    os: phone.os,
+    ai_fitur: phone.aiFitur,
+    fitur_kamera: phone.fiturKamera,
+  };
 }
 
-export function getOppoPhonesSync() {
-  return readJson(OPPO_FILE);
+function mapCompetitorFromDb(row) {
+  return {
+    id: row.id,
+    brand: row.brand,
+    model: row.model,
+    type: row.type,
+    harga: row.harga,
+    rearCamera: row.rear_camera,
+    selfieCamera: row.selfie_camera,
+    layar: row.layar,
+    speaker: row.speaker,
+    baterai: row.baterai,
+    ramRom: row.ram_rom,
+    sertifikasi: row.sertifikasi,
+    chipset: row.chipset,
+    os: row.os,
+    aiFitur: row.ai_fitur,
+    fiturKamera: row.fitur_kamera,
+  };
 }
 
-export function getCompetitorPhonesSync() {
-  return readJson(COMPETITORS_FILE);
+function mapCompetitorToDb(phone) {
+  return {
+    id: phone.id,
+    brand: phone.brand,
+    model: phone.model,
+    type: phone.type,
+    harga: phone.harga,
+    rear_camera: phone.rearCamera,
+    selfie_camera: phone.selfieCamera,
+    layar: phone.layar,
+    speaker: phone.speaker,
+    baterai: phone.baterai,
+    ram_rom: phone.ramRom,
+    sertifikasi: phone.sertifikasi,
+    chipset: phone.chipset,
+    os: phone.os,
+    ai_fitur: phone.aiFitur,
+    fitur_kamera: phone.fiturKamera,
+  };
 }
 
-export function saveOppoPhones(phones) {
-  writeJson(OPPO_FILE, phones);
+export async function getOppoPhonesSync() {
+  if (!supabaseAdmin) return [];
+  const { data, error } = await supabaseAdmin
+    .from(TABLE_OPPO)
+    .select('*')
+    .order('model', { ascending: true });
+  if (error) {
+    console.error('Error fetching OPPO phones:', error);
+    return [];
+  }
+  return data.map(mapOppoFromDb);
 }
 
-export function saveCompetitorPhones(phones) {
-  writeJson(COMPETITORS_FILE, phones);
+export async function getCompetitorPhonesSync() {
+  if (!supabaseAdmin) return [];
+  const { data, error } = await supabaseAdmin
+    .from(TABLE_COMPETITORS)
+    .select('*')
+    .order('brand', { ascending: true })
+    .order('model', { ascending: true });
+  if (error) {
+    console.error('Error fetching competitor phones:', error);
+    return [];
+  }
+  return data.map(mapCompetitorFromDb);
+}
+
+export async function saveOppoPhones(phones) {
+  if (!supabaseAdmin) return false;
+  const dbPhones = phones.map(mapOppoToDb);
+  const { error } = await supabaseAdmin.from(TABLE_OPPO).upsert(dbPhones, { onConflict: 'id' });
+  if (error) {
+    console.error('Error saving OPPO phones:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function saveCompetitorPhones(phones) {
+  if (!supabaseAdmin) return false;
+  const dbPhones = phones.map(mapCompetitorToDb);
+  const { error } = await supabaseAdmin.from(TABLE_COMPETITORS).upsert(dbPhones, { onConflict: 'id' });
+  if (error) {
+    console.error('Error saving competitor phones:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteOppoPhone(id) {
+  if (!supabaseAdmin) return false;
+  const { error } = await supabaseAdmin.from(TABLE_OPPO).delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting OPPO phone:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteCompetitorPhone(id) {
+  if (!supabaseAdmin) return false;
+  const { error } = await supabaseAdmin.from(TABLE_COMPETITORS).delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting competitor phone:', error);
+    return false;
+  }
+  return true;
 }

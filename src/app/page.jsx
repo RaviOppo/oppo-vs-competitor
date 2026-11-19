@@ -29,6 +29,12 @@ export default function Home() {
   const [compBrands, setCompBrands] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Selection state (lifted from SelectionPanel)
+  const [oppoType, setOppoType] = useState('');
+  const [oppoModel, setOppoModel] = useState(null);
+  const [compBrand, setCompBrand] = useState('');
+  const [compModel, setCompModel] = useState(null);
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -50,6 +56,13 @@ export default function Home() {
     }
     fetchData();
   }, []);
+
+  const resetAll = () => {
+    setOppoType('');
+    setOppoModel(null);
+    setCompBrand('');
+    setCompModel(null);
+  };
 
   if (loading) {
     return (
@@ -142,6 +155,15 @@ export default function Home() {
             compPhones={compPhones}
             oppoTypes={oppoTypes}
             compBrands={compBrands}
+            oppoType={oppoType}
+            setOppoType={setOppoType}
+            oppoModel={oppoModel}
+            setOppoModel={setOppoModel}
+            compBrand={compBrand}
+            setCompBrand={setCompBrand}
+            compModel={compModel}
+            setCompModel={setCompModel}
+            resetAll={resetAll}
           />
         </motion.section>
 
@@ -151,7 +173,10 @@ export default function Home() {
           animate="visible"
           className="w-full"
         >
-          <ComparisonTable />
+          <ComparisonTable
+            oppoPhone={oppoModel}
+            competitorPhone={compModel}
+          />
         </motion.section>
 
         <motion.footer

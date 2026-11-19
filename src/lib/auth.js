@@ -1,18 +1,6 @@
 import NextAuth from 'next-auth';
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
-
-const USERS_FILE = path.join(process.cwd(), 'src/data/users.json');
-
-function getUsers() {
-  if (!fs.existsSync(USERS_FILE)) return [];
-  return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
-}
-
-function saveUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
+import { supabaseAdmin } from './supabase';
 
 // Inline credentials provider to avoid import issues
 const CredentialsProvider = (options) => ({
@@ -32,12 +20,23 @@ export const authOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const users = getUsers();
-        const user = users.find(u => u.username === credentials.username);
-        if (!user) return null;
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+        if (!supabaseAdmin) {
+          console.error('Supabase admin client not configured');
+          return null;
+        }
+
+        const { data: users, error } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('username', credentials.username)
+          .single();
+
+        if (error || !users) return null;
+
+        const valid = await bcrypt.compare(credentials.password, users.password_hash);
         if (!valid) return null;
-        return { id: user.id, name: user.username, role: user.role };
+
+        return { id: users.id, name: users.username, role: users.role };
       },
     }),
   ],
