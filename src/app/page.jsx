@@ -6,8 +6,7 @@ import { Sparkles, RefreshCw, LogIn, Shield } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
-import { OPPO_PHONES, OPPO_TYPES } from '../data/oppo';
-import { COMPETITOR_PHONES, COMPETITOR_BRANDS } from '../data/competitors';
+import { usePhones } from '../hooks/usePhones';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,11 +24,7 @@ const sectionVariants = {
 };
 
 export default function Home() {
-  // Static data - no API calls needed
-  const oppoPhones = OPPO_PHONES;
-  const compPhones = COMPETITOR_PHONES;
-  const oppoTypes = OPPO_TYPES;
-  const compBrands = COMPETITOR_BRANDS;
+  const { oppoPhones, compPhones, oppoTypes, compBrands, loading, error } = usePhones();
 
   // Selection state (lifted from SelectionPanel)
   const [oppoType, setOppoType] = useState('');
@@ -43,6 +38,27 @@ export default function Home() {
     setCompBrand('');
     setCompModel(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-center">
+        <div className="text-red-500">
+          <p>Gagal memuat data: {error}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-primary text-white rounded">
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col">
