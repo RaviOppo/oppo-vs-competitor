@@ -265,6 +265,14 @@ function AdminLoginForm() {
         >
           OPPO vs Competitor Admin &copy; {new Date().getFullYear()}
         </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9, duration: 0.4 }}
+          className="mt-1 text-center text-xs text-muted-foreground/70"
+        >
+          Create By Muhammad Ravi Maulana
+        </motion.p>
       </motion.div>
     </div>
   );

@@ -575,6 +575,21 @@ export default function AdminPage() {
         </div>
       </main>
 
+        {/* Footer */}
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mt-8 mb-8 text-center"
+        >
+          <p className="text-sm text-muted-foreground">
+            Kelola database smartphone OPPO vs Kompetitor
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Create By Muhammad Ravi Maulana
+          </p>
+        </motion.footer>
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
