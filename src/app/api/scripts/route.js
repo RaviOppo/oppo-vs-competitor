@@ -16,5 +16,12 @@ export async function GET() {
     return Response.json({ error: 'Gagal memuat naskah' }, { status: 500 });
   }
 
-  return Response.json(data || []);
+  return new Response(JSON.stringify(data || []), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
+  });
 }
