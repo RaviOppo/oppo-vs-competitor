@@ -1,7 +1,7 @@
-import { getSupabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export async function GET() {
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   if (!supabase) {
     return Response.json({ error: 'Supabase not configured' }, { status: 500 });
   }
