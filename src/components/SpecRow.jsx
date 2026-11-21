@@ -18,15 +18,13 @@ const winLabels = {
 };
 
 function simpleCompare(fieldKey, oppoVal, compVal) {
-  if (!oppoVal || oppoVal === '-' || !compVal || compVal === '-') return null;
+  // OPPO ALWAYS WINS on these marketing fields (even if data missing):
+  if (fieldKey === 'sertifikasi') return 'oppo';      // Sertifikasi Ketahanan
+  if (fieldKey === 'os') return 'oppo';               // Sistem Operasi (ColorOS)
+  if (fieldKey === 'aiFitur') return 'oppo';          // Fitur AI
+  if (fieldKey === 'speaker') return 'oppo';          // Speaker (300% volume)
 
-  // Color OS (OPPO) always wins on OS field
-  if (fieldKey === 'os') {
-    const oppoOS = oppoVal.toLowerCase();
-    if (oppoOS.includes('coloros') || oppoOS.includes('color os')) {
-      return 'oppo';
-    }
-  }
+  if (!oppoVal || oppoVal === '-' || !compVal || compVal === '-') return null;
 
   const field = SPEC_FIELDS.find(f => f.key === fieldKey);
 
@@ -39,7 +37,7 @@ function simpleCompare(fieldKey, oppoVal, compVal) {
   const oppoNums = extractNumbers(oppoVal);
   const compNums = extractNumbers(compVal);
 
-  if (oppoNums.length === 0 && compNums.length === 0) return null;
+  // Real data comparison for the rest:
 
   // For harga, lower is better
   if (fieldKey === 'harga') {
@@ -87,16 +85,23 @@ function simpleCompare(fieldKey, oppoVal, compVal) {
     const oppoHz = oppoNums.find(n => n >= 60 && n <= 144) || 0;
     const compHz = compNums.find(n => n >= 60 && n <= 144) || 0;
     if (oppoHz !== compHz) return oppoHz > compHz ? 'oppo' : 'competitor';
+    // Also check for AMOLED vs LCD (AMOLED better)
+    const oppoLower = oppoVal.toLowerCase();
+    const compLower = compVal.toLowerCase();
+    const oppoAmoled = oppoLower.includes('amoled') || oppoLower.includes('oled');
+    const compAmoled = compLower.includes('amoled') || compLower.includes('oled');
+    if (oppoAmoled !== compAmoled) return oppoAmoled ? 'oppo' : 'competitor';
     return 'tie';
   }
 
-  // For chipset - rough comparison by known tiers (simplified)
+  // For chipset - compare by benchmark tier
   if (fieldKey === 'chipset') {
     const tierOrder = [
-      'unisoc t7225', 'unisoc t7250', 'helio g81', 'helio g99', 'helio g100', 'helio g200',
-      'dimensity 6360', 'dimensity 7100', 'dimensity 7300', 'dimensity 7360', 'dimensity 7400', 'dimensity 7400 turbo', 'dimensity 8400', 'dimensity 8400 ultimate',
-      'snapdragon 685', 'snapdragon 6 gen 3', 'snapdragon 7 gen 4', 'snapdragon 7 gen',
-      'exynos 1680', 'exynos 2400',
+      'unisoc t7225', 'unisoc t7250', 'helio g81', 'helio g99', 'helio g100',
+      'helio g200', 'snapdragon 685', 'dimensity 6360',
+      'dimensity 7100', 'dimensity 7300', 'snapdragon 6 gen 3', 'exynos 1680',
+      'dimensity 7360', 'dimensity 7400', 'dimensity 7400 turbo', 'snapdragon 7 gen',
+      'dimensity 8400', 'dimensity 8400 ultimate', 'snapdragon 7 gen 4', 'exynos 2400',
       'mtk 9500', 'qs 6 gen 5',
     ];
     const oppoLower = oppoVal.toLowerCase();
@@ -108,13 +113,22 @@ function simpleCompare(fieldKey, oppoVal, compVal) {
       if (compIdx > oppoIdx) return 'competitor';
       return 'tie';
     }
+    return 'tie';
   }
 
-  // Default: longer string might mean more features (very rough)
-  if (oppoVal.length !== compVal.length) {
-    return oppoVal.length > compVal.length ? 'oppo' : 'competitor';
+  // For camera features - count distinct features
+  if (fieldKey === 'fiturKamera') {
+    const countFeatures = (val) => {
+      if (!val || val === '-') return 0;
+      return val.split(/[,&]| dan |, /).filter(f => f.trim().length > 2).length;
+    };
+    const oppoCount = countFeatures(oppoVal);
+    const compCount = countFeatures(compVal);
+    if (oppoCount !== compCount) return oppoCount > compCount ? 'oppo' : 'competitor';
+    return 'tie';
   }
 
+  // Default: tie
   return 'tie';
 }
 
