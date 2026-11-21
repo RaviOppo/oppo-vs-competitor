@@ -1,26 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SPEC_FIELDS } from '../types/phone';
 import SpecRow from './SpecRow';
 import { FileText, X, Copy, Check } from 'lucide-react';
 
-async function fetchScripts() {
-  const res = await fetch('/api/scripts', { cache: 'no-store' });
-  if (!res.ok) return [];
-  return res.json();
-}
-
-export default function ComparisonTable({ oppoPhone, competitorPhone }) {
-  const [scripts, setScripts] = useState([]);
+export default function ComparisonTable({ oppoPhone, competitorPhone, scripts = [] }) {
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [selectedScript, setSelectedScript] = useState(null);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    fetchScripts().then(setScripts);
-  }, []);
 
   const copyToClipboard = async (text) => {
     await navigator.clipboard.writeText(text);

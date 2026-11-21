@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, RefreshCw, LogIn, Shield } from 'lucide-react';
 import Link from 'next/link';
@@ -31,6 +31,24 @@ export default function Home() {
   const [oppoModel, setOppoModel] = useState(null);
   const [compBrand, setCompBrand] = useState('');
   const [compModel, setCompModel] = useState(null);
+
+  // Scripts state - fetched here and passed to ComparisonTable
+  const [scripts, setScripts] = useState([]);
+
+  useEffect(() => {
+    async function fetchScripts() {
+      try {
+        const res = await fetch('/api/scripts', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setScripts(data || []);
+        }
+      } catch (err) {
+        console.error('Fetch scripts error:', err);
+      }
+    }
+    fetchScripts();
+  }, []);
 
   const resetAll = () => {
     setOppoType('');
@@ -161,6 +179,7 @@ export default function Home() {
           <ComparisonTable
             oppoPhone={oppoModel}
             competitorPhone={compModel}
+            scripts={scripts}
           />
         </motion.section>
 
