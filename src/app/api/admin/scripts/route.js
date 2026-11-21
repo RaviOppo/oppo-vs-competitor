@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
 import { getSupabaseAdmin } from '../../../../lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 function generateId(title) {
   return title.toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')

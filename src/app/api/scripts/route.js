@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
