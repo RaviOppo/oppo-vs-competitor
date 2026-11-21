@@ -35,19 +35,22 @@ export default function Home() {
   // Scripts state - fetched here and passed to ComparisonTable
   const [scripts, setScripts] = useState([]);
 
-  useEffect(() => {
-    async function fetchScripts() {
-      try {
-        const res = await fetch('/api/scripts', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setScripts(data || []);
-        }
-      } catch (err) {
-        console.error('Fetch scripts error:', err);
+  const fetchScripts = async () => {
+    try {
+      const res = await fetch('/api/scripts', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setScripts(data || []);
       }
+    } catch (err) {
+      console.error('Fetch scripts error:', err);
     }
+  };
+
+  useEffect(() => {
     fetchScripts();
+    const interval = setInterval(fetchScripts, 30000); // polling tiap 30 detik
+    return () => clearInterval(interval);
   }, []);
 
   const resetAll = () => {
