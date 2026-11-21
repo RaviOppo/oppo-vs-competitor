@@ -6,6 +6,7 @@ import { Sparkles, RefreshCw, LogIn, Shield } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
+import ScriptSelector from '../components/ScriptSelector';
 import { usePhones } from '../hooks/usePhones';
 
 const containerVariants = {
@@ -34,6 +35,7 @@ export default function Home() {
 
   // Scripts state - fetched here and passed to ComparisonTable
   const [scripts, setScripts] = useState([]);
+  const [selectedScript, setSelectedScript] = useState(null);
 
   const fetchScripts = async () => {
     try {
@@ -52,6 +54,10 @@ export default function Home() {
     const interval = setInterval(fetchScripts, 30000); // polling tiap 30 detik
     return () => clearInterval(interval);
   }, []);
+
+  const handleScriptSelect = (script) => {
+    setSelectedScript(script);
+  };
 
   const resetAll = () => {
     setOppoType('');
@@ -173,6 +179,19 @@ export default function Home() {
           />
         </motion.section>
 
+        {/* Script Selector - separate section above comparison table */}
+        <motion.section
+          variants={sectionVariants}
+          initial="hidden"
+          animate="visible"
+          className="w-full mb-6"
+        >
+          <ScriptSelector
+            scripts={scripts}
+            onSelect={handleScriptSelect}
+          />
+        </motion.section>
+
         <motion.section
           variants={sectionVariants}
           initial="hidden"
@@ -182,7 +201,7 @@ export default function Home() {
           <ComparisonTable
             oppoPhone={oppoModel}
             competitorPhone={compModel}
-            scripts={scripts}
+            selectedScript={selectedScript}
           />
         </motion.section>
 
