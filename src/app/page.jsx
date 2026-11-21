@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, RefreshCw, LogIn, Shield } from 'lucide-react';
+import { Sparkles, RefreshCw, LogIn, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
@@ -25,7 +25,7 @@ const sectionVariants = {
 };
 
 export default function Home() {
-  const { oppoPhones, compPhones, oppoTypes, compBrands, loading, error } = usePhones();
+  const { oppoPhones, compPhones, oppoTypes, compBrands, loading, error, refresh } = usePhones();
 
   // Selection state (lifted from SelectionPanel)
   const [oppoType, setOppoType] = useState('');
@@ -47,6 +47,11 @@ export default function Home() {
     } catch (err) {
       console.error('Fetch scripts error:', err);
     }
+  };
+
+  const handleRefresh = () => {
+    refresh();
+    fetchScripts();
   };
 
   useEffect(() => {
@@ -144,7 +149,16 @@ export default function Home() {
                 Bandingkan spesifikasi OPPO dengan kompetitor Vivo, Samsung, Xiaomi, Realme, Tecno, Infinix
               </motion.p>
             </div>
-            <motion.div variants={itemVariants} style={{ transitionDelay: '200ms' }}>
+            <motion.div variants={itemVariants} style={{ transitionDelay: '200ms' }} className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className="glass-strong rounded-xl border border-accent/30 bg-accent/5 text-accent px-4 py-2.5 font-medium hover:bg-accent/10 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh data dari server"
+              >
+                <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
               <Link
                 href="/admin/login"
                 className="glass-strong rounded-xl border border-secondary/30 bg-secondary/5 text-secondary px-5 py-2.5 font-medium hover:bg-secondary/10 transition-all flex items-center gap-2"
