@@ -11,9 +11,10 @@ export function usePhones() {
   const fetchPhones = useCallback(async () => {
     try {
       setLoading(true);
+      const t = Date.now();
       const [oppoRes, compRes] = await Promise.all([
-        fetch('/api/phones?category=oppo', { cache: 'no-store' }),
-        fetch('/api/phones?category=competitors', { cache: 'no-store' }),
+        fetch(`/api/phones?category=oppo&_t=${t}`, { cache: 'no-store' }),
+        fetch(`/api/phones?category=competitors&_t=${t}`, { cache: 'no-store' }),
       ]);
 
       if (!oppoRes.ok || !compRes.ok) {

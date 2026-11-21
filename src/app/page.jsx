@@ -39,7 +39,7 @@ export default function Home() {
 
   const fetchScripts = async () => {
     try {
-      const res = await fetch('/api/scripts', { cache: 'no-store' });
+      const res = await fetch(`/api/scripts?_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setScripts(data || []);
