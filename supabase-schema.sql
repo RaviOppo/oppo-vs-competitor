@@ -71,6 +71,27 @@ CREATE POLICY "Allow all for service role" ON oppo_phones FOR ALL USING (auth.ro
 CREATE POLICY "Allow all for service role" ON competitor_phones FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Allow all for service role" ON users FOR ALL USING (auth.role() = 'service_role');
 
+-- Scripts Table
+CREATE TABLE IF NOT EXISTS scripts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for scripts
+CREATE INDEX IF NOT EXISTS idx_scripts_created_at ON scripts(created_at DESC);
+
+-- RLS for scripts
+ALTER TABLE scripts ENABLE ROW LEVEL SECURITY;
+
+-- Policies: Allow all operations for service role (admin API)
+CREATE POLICY "Allow all for service role" ON scripts FOR ALL USING (auth.role() = 'service_role');
+
+-- Policies: Allow public read access (for comparison page)
+CREATE POLICY "Public read access" ON scripts FOR SELECT USING (true);
+
 -- Policies: Allow public read access (for comparison page)
 CREATE POLICY "Public read access" ON oppo_phones FOR SELECT USING (true);
 CREATE POLICY "Public read access" ON competitor_phones FOR SELECT USING (true);

@@ -36,3 +36,9 @@ export async function getModelsByBrand(brand) {
   const phones = await getCompetitorPhones();
   return phones.filter(p => p.brand === brand);
 }
+
+export async function getScripts() {
+  const res = await fetch(`${BASE_URL}/api/scripts`, { cache: 'no-store' });
+  if (!res.ok) return [];
+  return res.json();
+}
