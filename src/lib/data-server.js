@@ -182,15 +182,31 @@ export async function getScriptsSync() {
   return data || [];
 }
 
-export async function saveScripts(scripts) {
+export async function createScript(script) {
   const admin = getAdmin();
-  if (!admin) return false;
-  const { error } = await admin.from(TABLE_SCRIPTS).upsert(scripts, { onConflict: 'id' });
+  if (!admin) return null;
+  const { data, error } = await admin.from(TABLE_SCRIPTS).insert(script).select().single();
   if (error) {
-    console.error('Error saving scripts:', error);
-    return false;
+    console.error('Error creating script:', error);
+    return null;
   }
-  return true;
+  return data;
+}
+
+export async function updateScript(script) {
+  const admin = getAdmin();
+  if (!admin) return null;
+  const { data, error } = await admin
+    .from(TABLE_SCRIPTS)
+    .update({ ...script, updated_at: new Date().toISOString() })
+    .eq('id', script.id)
+    .select()
+    .single();
+  if (error) {
+    console.error('Error updating script:', error);
+    return null;
+  }
+  return data;
 }
 
 export async function deleteScript(id) {
