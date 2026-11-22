@@ -211,15 +211,10 @@ export default function AdminPage() {
         body: JSON.stringify(editingScript ? { ...scriptFormData, id: editingScript.id } : scriptFormData),
       });
       if (res.ok) {
-        const data = await res.json();
-        if (editingScript) {
-          setScripts(scripts.map(s => s.id === editingScript.id ? data : s));
-          showToast('Naskah diperbarui');
-        } else {
-          setScripts([data, ...scripts]);
-          showToast('Naskah ditambahkan');
-        }
+        const updated = await res.json(); // API returns full array (like phones)
+        setScripts(updated);
         setShowForm(false);
+        showToast(editingScript ? 'Naskah diperbarui' : 'Naskah ditambahkan');
       } else {
         const err = await res.json();
         throw new Error(err.error || 'Gagal menyimpan');
@@ -240,7 +235,8 @@ export default function AdminPage() {
         body: JSON.stringify({ id }),
       });
       if (res.ok) {
-        setScripts(scripts.filter(s => s.id !== id));
+        const updated = await res.json(); // API returns full array (like phones)
+        setScripts(updated);
         showToast('Naskah dihapus');
       }
     } catch (err) {
