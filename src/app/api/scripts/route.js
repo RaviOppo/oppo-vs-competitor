@@ -1,13 +1,13 @@
-import { getSupabaseAdmin } from '@/lib/supabase';
+import { getScriptsSync } from '@/lib/data-server';
 import { SCRIPTS } from '@/data/scripts';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = getSupabaseAdmin();
+  const scripts = await getScriptsSync();
 
   // Fallback to static data if Supabase not configured
-  if (!supabase) {
+  if (!scripts || scripts.length === 0) {
     return new Response(JSON.stringify(SCRIPTS || []), {
       headers: {
         'Content-Type': 'application/json',
@@ -18,17 +18,7 @@ export async function GET() {
     });
   }
 
-  const { data, error } = await supabase
-    .from('scripts')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Supabase error:', error);
-    return Response.json({ error: 'Gagal memuat naskah' }, { status: 500 });
-  }
-
-  return new Response(JSON.stringify(data || []), {
+  return new Response(JSON.stringify(scripts), {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

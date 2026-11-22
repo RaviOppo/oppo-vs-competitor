@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from './supabase';
 
 const TABLE_OPPO = 'oppo_phones';
 const TABLE_COMPETITORS = 'competitor_phones';
+const TABLE_SCRIPTS = 'scripts';
 
 function mapOppoFromDb(row) {
   return {
@@ -161,6 +162,43 @@ export async function deleteCompetitorPhone(id) {
   const { error } = await admin.from(TABLE_COMPETITORS).delete().eq('id', id);
   if (error) {
     console.error('Error deleting competitor phone:', error);
+    return false;
+  }
+  return true;
+}
+
+// Scripts sync functions
+export async function getScriptsSync() {
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data, error } = await admin
+    .from(TABLE_SCRIPTS)
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('Error fetching scripts:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function saveScripts(scripts) {
+  const admin = getAdmin();
+  if (!admin) return false;
+  const { error } = await admin.from(TABLE_SCRIPTS).upsert(scripts, { onConflict: 'id' });
+  if (error) {
+    console.error('Error saving scripts:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteScript(id) {
+  const admin = getAdmin();
+  if (!admin) return false;
+  const { error } = await admin.from(TABLE_SCRIPTS).delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting script:', error);
     return false;
   }
   return true;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, RefreshCw, LogIn, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
@@ -37,7 +37,7 @@ export default function Home() {
   const [scripts, setScripts] = useState([]);
   const [selectedScript, setSelectedScript] = useState(null);
 
-  const fetchScripts = async () => {
+  const fetchScripts = useCallback(async () => {
     try {
       const res = await fetch(`/api/scripts?_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
@@ -47,7 +47,7 @@ export default function Home() {
     } catch (err) {
       console.error('Fetch scripts error:', err);
     }
-  };
+  }, []);
 
   const handleRefresh = () => {
     refresh();
@@ -56,9 +56,9 @@ export default function Home() {
 
   useEffect(() => {
     fetchScripts();
-    const interval = setInterval(fetchScripts, 30000); // polling tiap 30 detik
+    const interval = setInterval(fetchScripts, 5000); // polling tiap 5 detik (sama seperti real-time feel)
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchScripts]);
 
   const handleScriptSelect = (script) => {
     setSelectedScript(script);

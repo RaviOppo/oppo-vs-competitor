@@ -1,8 +1,14 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { getSupabaseAdmin } from '../../../../lib/supabase';
+import { getScriptsSync, saveScripts, deleteScript } from '../../../../lib/data-server';
+import { SCRIPTS } from '../../../../data/scripts';
 
 export const dynamic = 'force-dynamic';
+
+// Check if Supabase is configured
+function hasSupabase() {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
 
 function generateId(title) {
   return title.toLowerCase()
@@ -29,22 +35,13 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return new Response('Unauthorized', { status: 401 });
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return Response.json({ error: 'Supabase not configured' }, { status: 500 });
+  if (hasSupabase()) {
+    const scripts = await getScriptsSync();
+    return Response.json(scripts);
   }
 
-  const { data, error } = await supabase
-    .from('scripts')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Supabase error:', error);
-    return Response.json({ error: 'Gagal memuat naskah' }, { status: 500 });
-  }
-
-  return Response.json(data || []);
+  // Fallback to static data
+  return Response.json(SCRIPTS || []);
 }
 
 export async function POST(request) {
@@ -55,29 +52,20 @@ export async function POST(request) {
   const validation = validateScript(title, content);
   if (validation) return Response.json(validation, { status: 400 });
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return Response.json({ error: 'Supabase not configured' }, { status: 500 });
+  if (hasSupabase()) {
+    const scripts = await getScriptsSync();
+    const newScript = {
+      id: generateId(title),
+      title: title.trim(),
+      content: content.trim(),
+    };
+    scripts.push(newScript);
+    await saveScripts(scripts);
+    return Response.json(scripts);
   }
 
-  const newScript = {
-    id: generateId(title),
-    title: title.trim(),
-    content: content.trim(),
-  };
-
-  const { data, error } = await supabase
-    .from('scripts')
-    .insert(newScript)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Supabase error:', error);
-    return Response.json({ error: 'Gagal menyimpan naskah' }, { status: 500 });
-  }
-
-  return Response.json(data);
+  // Supabase not configured
+  return Response.json({ error: 'Database tidak dikonfigurasi. Tambah Supabase env vars untuk menyimpan data.' }, { status: 503 });
 }
 
 export async function PUT(request) {
@@ -91,28 +79,14 @@ export async function PUT(request) {
   const validation = validateScript(title, content);
   if (validation) return Response.json(validation, { status: 400 });
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return Response.json({ error: 'Supabase not configured' }, { status: 500 });
+  if (hasSupabase()) {
+    const scripts = await getScriptsSync();
+    const updated = scripts.map(s => s.id === id ? { ...s, title: title.trim(), content: content.trim(), updated_at: new Date().toISOString() } : s);
+    await saveScripts(updated);
+    return Response.json(updated);
   }
 
-  const { data, error } = await supabase
-    .from('scripts')
-    .update({ title: title.trim(), content: content.trim(), updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Supabase error:', error);
-    return Response.json({ error: 'Gagal memperbarui naskah' }, { status: 500 });
-  }
-
-  if (!data) {
-    return Response.json({ error: 'Naskah tidak ditemukan' }, { status: 404 });
-  }
-
-  return Response.json(data);
+  return Response.json({ error: 'Database tidak dikonfigurasi. Tambah Supabase env vars untuk menyimpan data.' }, { status: 503 });
 }
 
 export async function DELETE(request) {
@@ -124,20 +98,11 @@ export async function DELETE(request) {
     return Response.json({ error: 'ID wajib diisi' }, { status: 400 });
   }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return Response.json({ error: 'Supabase not configured' }, { status: 500 });
+  if (hasSupabase()) {
+    await deleteScript(id);
+    const scripts = await getScriptsSync();
+    return Response.json(scripts);
   }
 
-  const { error } = await supabase
-    .from('scripts')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error('Supabase error:', error);
-    return Response.json({ error: 'Gagal menghapus naskah' }, { status: 500 });
-  }
-
-  return Response.json({ success: true });
+  return Response.json({ error: 'Database tidak dikonfigurasi. Tambah Supabase env vars untuk menyimpan data.' }, { status: 503 });
 }
