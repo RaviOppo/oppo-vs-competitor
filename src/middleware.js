@@ -47,9 +47,17 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    // Protect home page (/) - require any authenticated user
+    // Protect home page (/) - require authenticated user (user OR admin)
     if (path === '/') {
       if (!token) {
+        try {
+          return NextResponse.redirect(new URL('/login?callbackUrl=/', req.url));
+        } catch {
+          return NextResponse.next();
+        }
+      }
+      // Allow both 'user' and 'admin' roles
+      if (token.role !== 'user' && token.role !== 'admin') {
         try {
           return NextResponse.redirect(new URL('/login?callbackUrl=/', req.url));
         } catch {
@@ -67,8 +75,8 @@ export default withAuth(
         const path = req.nextUrl.pathname;
         // Allow login pages without token
         if (path === '/login' || path === '/admin/login') return true;
-        // Require token for home page
-        if (path === '/') return !!token;
+        // Require token for home page (user OR admin)
+        if (path === '/') return token?.role === 'user' || token?.role === 'admin';
         // Require admin token for admin routes
         if (path.startsWith('/admin')) return token?.role === 'admin';
         // Allow all other pages

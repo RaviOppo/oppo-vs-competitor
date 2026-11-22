@@ -76,10 +76,12 @@ async function seed() {
   const oppoData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/data/oppo.json'), 'utf-8'));
   const compData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/data/competitors.json'), 'utf-8'));
   const usersData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/data/users.json'), 'utf-8'));
+  const scriptsData = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src/data/scripts.json'), 'utf-8'));
 
   console.log(`📱 OPPO phones: ${oppoData.length}`);
   console.log(`📱 Competitor phones: ${compData.length}`);
-  console.log(`👤 Users: ${usersData.length}\n`);
+  console.log(`👤 Users: ${usersData.length}`);
+  console.log(`📝 Scripts: ${scriptsData.length}\n`);
 
   // Seed OPPO phones
   console.log('📤 Seeding OPPO phones...');
@@ -115,6 +117,22 @@ async function seed() {
       console.error(`❌ User ${user.username} error:`, userError.message);
     } else {
       console.log(`✅ User seeded: ${user.username}`);
+    }
+  }
+
+  // Seed Scripts
+  console.log('📤 Seeding Scripts...');
+  for (const script of scriptsData) {
+    const { error: scriptError } = await supabase.from('scripts').upsert({
+      id: script.id,
+      title: script.title,
+      content: script.content,
+    }, { onConflict: 'id' });
+
+    if (scriptError) {
+      console.error(`❌ Script ${script.title} error:`, scriptError.message);
+    } else {
+      console.log(`✅ Script seeded: ${script.title}`);
     }
   }
 
