@@ -28,6 +28,12 @@ const SPEC_FIELDS = [
   { key: 'fiturKamera', label: 'Fitur Kamera Khusus', type: 'text', required: false, placeholder: 'Contoh: POP Camera, Underwater' },
 ];
 
+// Simplified fields for Naskah - only Judul and Isi Text
+const NASKAH_FIELDS = [
+  { key: 'model', label: 'Judul', type: 'text', required: true, placeholder: 'Contoh: Naskah Pidato' },
+  { key: 'aiFitur', label: 'Isi Text', type: 'textarea', required: true, placeholder: 'Tulis isi naskah di sini...', rows: 10 },
+];
+
 function generateId(brand, model) {
   return brand.toLowerCase().replace(/\s+/g, '-') + '-' + model.toLowerCase().replace(/\s+/g, '-');
 }
@@ -97,11 +103,21 @@ export default function AdminPage() {
   };
 
   const resetForm = () => {
-    setFormData({
-      ...INITIAL_FORM,
-      brand: activeTab === 'oppo' ? 'OPPO' : '',
-      os: activeTab === 'oppo' ? 'ColorOS' : '',
-    });
+    if (activeTab === 'naskah') {
+      setFormData({
+        ...INITIAL_FORM,
+        brand: 'Umum',
+        type: 'Naskah',
+        model: '',
+        aiFitur: '',
+      });
+    } else {
+      setFormData({
+        ...INITIAL_FORM,
+        brand: activeTab === 'oppo' ? 'OPPO' : '',
+        os: activeTab === 'oppo' ? 'ColorOS' : '',
+      });
+    }
     setEditingPhone(null);
     setShowNewBrandInput(false);
     setShowForm(true);
@@ -120,7 +136,8 @@ export default function AdminPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const missing = SPEC_FIELDS.filter(f => f.required && !formData[f.key]?.trim());
+    const fields = activeTab === 'naskah' ? NASKAH_FIELDS : SPEC_FIELDS;
+    const missing = fields.filter(f => f.required && !formData[f.key]?.trim());
     if (missing.length) {
       showToast(`Field wajib: ${missing.map(f => f.label).join(', ')}`, 'error');
       return;
@@ -296,7 +313,7 @@ export default function AdminPage() {
                     <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                       {editingPhone ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                     </div>
-                    {(editingPhone ? 'Edit' : 'Tambah') + ' Model ' + (activeTab === 'oppo' ? 'OPPO' : activeTab === 'competitors' ? 'Kompetitor' : 'Naskah')}
+                    {(editingPhone ? 'Edit' : 'Tambah') + ' ' + (activeTab === 'oppo' ? 'Model OPPO' : activeTab === 'competitors' ? 'Model Kompetitor' : 'Naskah')}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     Isi form di bawah. Field bintang (*) wajib diisi.
@@ -314,29 +331,89 @@ export default function AdminPage() {
               {/* Phone Form */}
               <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {SPEC_FIELDS.map(field => (
-                    <motion.div
-                      key={field.key}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: 0.05 }}
-                      className={field.type === 'textarea' ? 'sm:col-span-2 lg:col-span-3' : ''}
-                    >
-                      <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
-                        {field.label}
-                        {field.required && <span className="text-destructive" aria-hidden="true">*</span>}
-                      </label>
-                      {field.type === 'textarea' ? (
-                        <textarea
-                          name={field.key}
-                          value={formData[field.key] || ''}
-                          onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                          required={field.required}
-                          rows={3}
-                          placeholder={field.placeholder}
-                          className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-none placeholder:text-muted-foreground/50"
+                  {activeTab === 'naskah' ? (
+                    // Naskah form: hanya Judul + Isi Text
+                    <>
+                      <motion.div
+                        key="model"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: 0.05 }}
+                        className="sm:col-span-2 lg:col-span-3"
+                      >
+                        <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
+                          Judul <span className="text-destructive" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="model"
+                          value={formData.model || ''}
+                          onChange={e => setFormData({ ...formData, model: e.target.value })}
+                          required
+                          placeholder="Masukkan judul naskah"
+                          className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted-foreground/50"
                         />
-                      ) : field.key === 'brand' && (activeTab === 'competitors' || activeTab === 'naskah') ? (
+                      </motion.div>
+                      <motion.div
+                        key="isi"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: 0.05 }}
+                        className="sm:col-span-2 lg:col-span-3"
+                      >
+                        <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
+                          Isi Text <span className="text-destructive" aria-hidden="true">*</span>
+                        </label>
+                        <textarea
+                          name="aiFitur"
+                          value={formData.aiFitur || ''}
+                          onChange={e => setFormData({ ...formData, aiFitur: e.target.value })}
+                          required
+                          rows={8}
+                          placeholder="Tulis isi naskah di sini..."
+                          className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-none placeholder:text-muted-foreground/50 font-mono text-sm"
+                        />
+                      </motion.div>
+                      {/* Hidden fields for naskah - set defaults */}
+                      <input type="hidden" name="brand" value={formData.brand || 'Umum'} />
+                      <input type="hidden" name="type" value={formData.type || 'Naskah'} />
+                      <input type="hidden" name="harga" value="" />
+                      <input type="hidden" name="rearCamera" value="" />
+                      <input type="hidden" name="selfieCamera" value="" />
+                      <input type="hidden" name="layar" value="" />
+                      <input type="hidden" name="speaker" value="" />
+                      <input type="hidden" name="baterai" value="" />
+                      <input type="hidden" name="ramRom" value="" />
+                      <input type="hidden" name="sertifikasi" value="" />
+                      <input type="hidden" name="chipset" value="" />
+                      <input type="hidden" name="os" value="" />
+                      <input type="hidden" name="fiturKamera" value="" />
+                    </>
+                  ) : (
+                    // Original phone form for OPPO & Kompetitor
+                    SPEC_FIELDS.map(field => (
+                      <motion.div
+                        key={field.key}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: 0.05 }}
+                        className={field.type === 'textarea' ? 'sm:col-span-2 lg:col-span-3' : ''}
+                      >
+                        <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
+                          {field.label}
+                          {field.required && <span className="text-destructive" aria-hidden="true">*</span>}
+                        </label>
+                        {field.type === 'textarea' ? (
+                          <textarea
+                            name={field.key}
+                            value={formData[field.key] || ''}
+                            onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
+                            required={field.required}
+                            rows={3}
+                            placeholder={field.placeholder}
+                            className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-none placeholder:text-muted-foreground/50"
+                          />
+                        ) : field.key === 'brand' && (activeTab === 'competitors' || activeTab === 'naskah') ? (
                         // Brand dropdown for competitors
                         <div>
                           {!showNewBrandInput ? (
@@ -434,7 +511,8 @@ export default function AdminPage() {
                         </div>
                       )}
                     </motion.div>
-                  ))}
+                  ))
+                )}
                 </div>
 
                 {/* Form Actions */}
@@ -529,7 +607,51 @@ export default function AdminPage() {
                       </div>
                     </td>
                   </tr>
+                ) : activeTab === 'naskah' ? (
+                  // Naskah table: Judul + Isi Text preview
+                  filteredPhones.map((phone, index) => (
+                    <motion.tr
+                      key={phone.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-foreground max-w-xs truncate">{phone.model}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell max-w-md truncate">
+                        {phone.aiFitur ? phone.aiFitur.substring(0, 100) + (phone.aiFitur.length > 100 ? '...' : '') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">{phone.brand || 'Umum'}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">{phone.type || 'Naskah'}</td>
+                      <td className="px-4 py-3 text-sm hidden xl:table-cell">-</td>
+                      <td className="px-4 py-3 text-sm hidden xl:table-cell">-</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(phone)}
+                            className="p-2 glass rounded-lg hover:bg-primary/10 text-primary transition-all"
+                            aria-label={`Edit ${phone.model}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(phone.id)}
+                            className="p-2 glass rounded-lg hover:bg-destructive/10 text-destructive transition-all"
+                            aria-label={`Hapus ${phone.model}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
                 ) : (
+                  // Phone table: OPPO & Kompetitor
                   filteredPhones.map((phone, index) => (
                     <motion.tr
                       key={phone.id}

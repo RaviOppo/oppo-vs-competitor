@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, RefreshCw, Shield, RotateCcw } from 'lucide-react';
+import { Sparkles, RefreshCw, Shield, RotateCcw, FileText } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
@@ -23,8 +23,13 @@ const sectionVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] } },
 };
 
+const listItemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.34, 1.56, 0.64, 1] } },
+};
+
 export default function Home() {
-  const { oppoPhones, compPhones, oppoTypes, compBrands, loading, error, refresh } = usePhones();
+  const { oppoPhones, compPhones, naskahPhones, oppoTypes, compBrands, loading, error, refresh } = usePhones();
 
   // Selection state (lifted from SelectionPanel)
   const [oppoType, setOppoType] = useState('');
@@ -175,6 +180,78 @@ export default function Home() {
             oppoPhone={oppoModel}
             competitorPhone={compModel}
           />
+        </motion.section>
+
+        {/* Naskah Section */}
+        <motion.section
+          variants={sectionVariants}
+          initial="hidden"
+          animate="visible"
+          className="w-full mt-8"
+        >
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="glass-strong rounded-2xl border border-border/50 overflow-hidden"
+          >
+            <div className="p-4 sm:p-6 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-foreground">Naskah</h2>
+                  <p className="text-sm text-muted-foreground">Kumpulan naskah dan catatan</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 glass-strong rounded-full text-xs font-medium text-accent border border-accent/30">
+                {naskahPhones.length} naskah
+              </span>
+            </div>
+
+            <div className="divide-y divide-border/50">
+              {naskahPhones.length === 0 ? (
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="w-16 h-16 rounded-full glass border border-border/50 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-muted-foreground/50" />
+                  </div>
+                  <p className="font-medium text-foreground">Belum ada naskah</p>
+                  <p className="text-sm text-muted-foreground mt-1">Naskah akan muncul di sini setelah ditambahkan di halaman admin</p>
+                </div>
+              ) : (
+                naskahPhones.map((naskah, index) => (
+                  <motion.article
+                    key={naskah.id}
+                    variants={listItemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    transition={{ delay: index * 0.05 }}
+                    className="p-4 sm:p-6 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{naskah.model}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 font-mono leading-relaxed whitespace-pre-line max-h-32 overflow-hidden">
+                          {naskah.aiFitur || '—'}
+                        </p>
+                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <FileText className="w-3 h-3" />
+                            {naskah.brand || 'Umum'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-full bg-accent/20 flex items-center justify-center" />
+                            {naskah.type || 'Naskah'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.article>
+                ))
+              )}
+            </div>
+          </motion.div>
         </motion.section>
 
         <motion.footer
