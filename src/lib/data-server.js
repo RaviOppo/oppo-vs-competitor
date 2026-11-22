@@ -88,6 +88,26 @@ function mapCompetitorToDb(phone) {
   };
 }
 
+function mapScriptFromDb(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function mapScriptToDb(script) {
+  return {
+    id: script.id,
+    title: script.title,
+    content: script.content,
+    created_at: script.created_at,
+    updated_at: script.updated_at,
+  };
+}
+
 function getAdmin() {
   return getSupabaseAdmin();
 }
@@ -121,6 +141,20 @@ export async function getCompetitorPhonesSync() {
   return data.map(mapCompetitorFromDb);
 }
 
+export async function getScriptsSync() {
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data, error } = await admin
+    .from(TABLE_SCRIPTS)
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('Error fetching scripts:', error);
+    return [];
+  }
+  return data.map(mapScriptFromDb);
+}
+
 export async function saveOppoPhones(phones) {
   const admin = getAdmin();
   if (!admin) return false;
@@ -140,6 +174,18 @@ export async function saveCompetitorPhones(phones) {
   const { error } = await admin.from(TABLE_COMPETITORS).upsert(dbPhones, { onConflict: 'id' });
   if (error) {
     console.error('Error saving competitor phones:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function saveScripts(scripts) {
+  const admin = getAdmin();
+  if (!admin) return false;
+  const dbScripts = scripts.map(mapScriptToDb);
+  const { error } = await admin.from(TABLE_SCRIPTS).upsert(dbScripts, { onConflict: 'id' });
+  if (error) {
+    console.error('Error saving scripts:', error);
     return false;
   }
   return true;
@@ -165,48 +211,6 @@ export async function deleteCompetitorPhone(id) {
     return false;
   }
   return true;
-}
-
-// Scripts sync functions
-export async function getScriptsSync() {
-  const admin = getAdmin();
-  if (!admin) return [];
-  const { data, error } = await admin
-    .from(TABLE_SCRIPTS)
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) {
-    console.error('Error fetching scripts:', error);
-    return [];
-  }
-  return data || [];
-}
-
-export async function createScript(script) {
-  const admin = getAdmin();
-  if (!admin) return null;
-  const { data, error } = await admin.from(TABLE_SCRIPTS).insert(script).select().single();
-  if (error) {
-    console.error('Error creating script:', error);
-    return null;
-  }
-  return data;
-}
-
-export async function updateScript(script) {
-  const admin = getAdmin();
-  if (!admin) return null;
-  const { data, error } = await admin
-    .from(TABLE_SCRIPTS)
-    .update({ ...script, updated_at: new Date().toISOString() })
-    .eq('id', script.id)
-    .select()
-    .single();
-  if (error) {
-    console.error('Error updating script:', error);
-    return null;
-  }
-  return data;
 }
 
 export async function deleteScript(id) {

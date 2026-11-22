@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { getScriptsSync, createScript, updateScript, deleteScript } from '../../../../lib/data-server';
+import { getScriptsSync, saveScripts, deleteScript } from '../../../../lib/data-server';
 import { SCRIPTS } from '../../../../data/scripts';
 
 export const dynamic = 'force-dynamic';
@@ -53,19 +53,20 @@ export async function POST(request) {
   if (validation) return Response.json(validation, { status: 400 });
 
   if (hasSupabase()) {
+    const scripts = await getScriptsSync();
     const newScript = {
       id: generateId(title),
       title: title.trim(),
       content: content.trim(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    const created = await createScript(newScript);
-    if (!created) {
-      return Response.json({ error: 'Gagal menyimpan naskah' }, { status: 500 });
-    }
-    return Response.json(created);
+    scripts.push(newScript);
+    await saveScripts(scripts);
+    return Response.json(scripts);
   }
 
-  // Supabase not configured
+  // Supabase not configured - return error for write operations
   return Response.json({ error: 'Database tidak dikonfigurasi. Tambah Supabase env vars untuk menyimpan data.' }, { status: 503 });
 }
 
@@ -81,15 +82,9 @@ export async function PUT(request) {
   if (validation) return Response.json(validation, { status: 400 });
 
   if (hasSupabase()) {
-    const script = {
-      id,
-      title: title.trim(),
-      content: content.trim(),
-    };
-    const updated = await updateScript(script);
-    if (!updated) {
-      return Response.json({ error: 'Gagal memperbarui naskah' }, { status: 500 });
-    }
+    const scripts = await getScriptsSync();
+    const updated = scripts.map(s => s.id === id ? { ...s, title: title.trim(), content: content.trim(), updated_at: new Date().toISOString() } : s);
+    await saveScripts(updated);
     return Response.json(updated);
   }
 
@@ -106,10 +101,7 @@ export async function DELETE(request) {
   }
 
   if (hasSupabase()) {
-    const success = await deleteScript(id);
-    if (!success) {
-      return Response.json({ error: 'Gagal menghapus naskah' }, { status: 500 });
-    }
+    await deleteScript(id);
     const scripts = await getScriptsSync();
     return Response.json(scripts);
   }
