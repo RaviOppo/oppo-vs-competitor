@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, RefreshCw, LogIn, Shield, RotateCcw } from 'lucide-react';
+import { Sparkles, RefreshCw, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import SelectionPanel from '../components/SelectionPanel';
 import ComparisonTable from '../components/ComparisonTable';
-import ScriptSelector from '../components/ScriptSelector';
 import { usePhones } from '../hooks/usePhones';
 
 const containerVariants = {
@@ -33,35 +32,8 @@ export default function Home() {
   const [compBrand, setCompBrand] = useState('');
   const [compModel, setCompModel] = useState(null);
 
-  // Scripts state - fetched here and passed to ComparisonTable
-  const [scripts, setScripts] = useState([]);
-  const [selectedScript, setSelectedScript] = useState(null);
-
-  const fetchScripts = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/scripts?_t=${Date.now()}`, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setScripts(data || []);
-      }
-    } catch (err) {
-      console.error('Fetch scripts error:', err);
-    }
-  }, []);
-
   const handleRefresh = () => {
     refresh();
-    fetchScripts();
-  };
-
-  useEffect(() => {
-    fetchScripts();
-    const interval = setInterval(fetchScripts, 5000); // polling tiap 5 detik (sama seperti real-time feel)
-    return () => clearInterval(interval);
-  }, [fetchScripts]);
-
-  const handleScriptSelect = (script) => {
-    setSelectedScript(script);
   };
 
   const resetAll = () => {
@@ -193,19 +165,6 @@ export default function Home() {
           />
         </motion.section>
 
-        {/* Script Selector - separate section above comparison table */}
-        <motion.section
-          variants={sectionVariants}
-          initial="hidden"
-          animate="visible"
-          className="w-full mb-6"
-        >
-          <ScriptSelector
-            scripts={scripts}
-            onSelect={handleScriptSelect}
-          />
-        </motion.section>
-
         <motion.section
           variants={sectionVariants}
           initial="hidden"
@@ -215,7 +174,6 @@ export default function Home() {
           <ComparisonTable
             oppoPhone={oppoModel}
             competitorPhone={compModel}
-            selectedScript={selectedScript}
           />
         </motion.section>
 

@@ -2,7 +2,7 @@ import { getSupabaseAdmin } from './supabase';
 
 const TABLE_OPPO = 'oppo_phones';
 const TABLE_COMPETITORS = 'competitor_phones';
-const TABLE_SCRIPTS = 'scripts';
+const TABLE_NASAKAH = 'naskah';
 
 function mapOppoFromDb(row) {
   return {
@@ -88,23 +88,45 @@ function mapCompetitorToDb(phone) {
   };
 }
 
-function mapScriptFromDb(row) {
+function mapNaskahFromDb(row) {
   return {
     id: row.id,
-    title: row.title,
-    content: row.content,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
+    brand: row.brand,
+    model: row.model,
+    type: row.type,
+    harga: row.harga,
+    rearCamera: row.rear_camera,
+    selfieCamera: row.selfie_camera,
+    layar: row.layar,
+    speaker: row.speaker,
+    baterai: row.baterai,
+    ramRom: row.ram_rom,
+    sertifikasi: row.sertifikasi,
+    chipset: row.chipset,
+    os: row.os,
+    aiFitur: row.ai_fitur,
+    fiturKamera: row.fitur_kamera,
   };
 }
 
-function mapScriptToDb(script) {
+function mapNaskahToDb(naskah) {
   return {
-    id: script.id,
-    title: script.title,
-    content: script.content,
-    created_at: script.created_at,
-    updated_at: script.updated_at,
+    id: naskah.id,
+    brand: naskah.brand,
+    model: naskah.model,
+    type: naskah.type,
+    harga: naskah.harga,
+    rear_camera: naskah.rearCamera,
+    selfie_camera: naskah.selfieCamera,
+    layar: naskah.layar,
+    speaker: naskah.speaker,
+    baterai: naskah.baterai,
+    ram_rom: naskah.ramRom,
+    sertifikasi: naskah.sertifikasi,
+    chipset: naskah.chipset,
+    os: naskah.os,
+    ai_fitur: naskah.aiFitur,
+    fitur_kamera: naskah.fiturKamera,
   };
 }
 
@@ -141,20 +163,6 @@ export async function getCompetitorPhonesSync() {
   return data.map(mapCompetitorFromDb);
 }
 
-export async function getScriptsSync() {
-  const admin = getAdmin();
-  if (!admin) return [];
-  const { data, error } = await admin
-    .from(TABLE_SCRIPTS)
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) {
-    console.error('Error fetching scripts:', error);
-    return [];
-  }
-  return data.map(mapScriptFromDb);
-}
-
 export async function saveOppoPhones(phones) {
   const admin = getAdmin();
   if (!admin) return false;
@@ -174,18 +182,6 @@ export async function saveCompetitorPhones(phones) {
   const { error } = await admin.from(TABLE_COMPETITORS).upsert(dbPhones, { onConflict: 'id' });
   if (error) {
     console.error('Error saving competitor phones:', error);
-    return false;
-  }
-  return true;
-}
-
-export async function saveScripts(scripts) {
-  const admin = getAdmin();
-  if (!admin) return false;
-  const dbScripts = scripts.map(mapScriptToDb);
-  const { error } = await admin.from(TABLE_SCRIPTS).upsert(dbScripts, { onConflict: 'id' });
-  if (error) {
-    console.error('Error saving scripts:', error);
     return false;
   }
   return true;
@@ -213,12 +209,38 @@ export async function deleteCompetitorPhone(id) {
   return true;
 }
 
-export async function deleteScript(id) {
+export async function getNaskahSync() {
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data, error } = await admin
+    .from(TABLE_NASAKAH)
+    .select('*')
+    .order('model', { ascending: true });
+  if (error) {
+    console.error('Error fetching Naskah:', error);
+    return [];
+  }
+  return data.map(mapNaskahFromDb);
+}
+
+export async function saveNaskah(naskahArray) {
   const admin = getAdmin();
   if (!admin) return false;
-  const { error } = await admin.from(TABLE_SCRIPTS).delete().eq('id', id);
+  const dbNaskah = naskahArray.map(mapNaskahToDb);
+  const { error } = await admin.from(TABLE_NASAKAH).upsert(dbNaskah, { onConflict: 'id' });
   if (error) {
-    console.error('Error deleting script:', error);
+    console.error('Error saving Naskah:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteNaskah(id) {
+  const admin = getAdmin();
+  if (!admin) return false;
+  const { error } = await admin.from(TABLE_NASAKAH).delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting Naskah:', error);
     return false;
   }
   return true;

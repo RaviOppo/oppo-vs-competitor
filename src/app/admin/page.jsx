@@ -6,12 +6,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Trash2, Edit, Save, X, Smartphone, ChevronDown, LogOut,
-  Search, Filter, Download, Upload, Eye, MoreVertical,
-  Loader2, CheckCircle2, AlertCircle, BarChart2, Layers, Home,
-  FileText, Type
+  Plus, Trash2, Edit, Save, X, Smartphone, LogOut,
+  Search, Loader2, CheckCircle2, AlertCircle, Layers, Home, FileText
 } from 'lucide-react';
-import { getOppoPhones, getCompetitorPhones, getScripts } from '../../lib/data';
 
 const SPEC_FIELDS = [
   { key: 'brand', label: 'Brand', type: 'text', required: true, placeholder: 'Contoh: Vivo, Samsung, Xiaomi' },
@@ -59,13 +56,11 @@ export default function AdminPage() {
 
   const [oppoPhones, setOppoPhones] = useState([]);
   const [compPhones, setCompPhones] = useState([]);
-  const [scripts, setScripts] = useState([]);
+  const [naskahPhones, setNaskahPhones] = useState([]);
   const [activeTab, setActiveTab] = useState('oppo');
   const [showForm, setShowForm] = useState(false);
   const [editingPhone, setEditingPhone] = useState(null);
-  const [editingScript, setEditingScript] = useState(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
-  const [scriptFormData, setScriptFormData] = useState({ title: '', content: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -80,18 +75,12 @@ export default function AdminPage() {
   const fetchData = useCallback(async () => {
     if (!session) return;
     try {
-      const [phonesRes, scriptsRes] = await Promise.all([
-        fetch('/api/admin/phones'),
-        fetch('/api/admin/scripts'),
-      ]);
+      const phonesRes = await fetch('/api/admin/phones');
       if (phonesRes.ok) {
         const data = await phonesRes.json();
         setOppoPhones(data.oppo || []);
         setCompPhones(data.competitors || []);
-      }
-      if (scriptsRes.ok) {
-        const scriptsData = await scriptsRes.json();
-        setScripts(scriptsData || []);
+        setNaskahPhones(data.naskah || []);
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -108,20 +97,14 @@ export default function AdminPage() {
   };
 
   const resetForm = () => {
-    if (activeTab === 'scripts') {
-      setScriptFormData({ title: '', content: '' });
-      setEditingScript(null);
-      setShowForm(true);
-    } else {
-      setFormData({
-        ...INITIAL_FORM,
-        brand: activeTab === 'oppo' ? 'OPPO' : '',
-        os: activeTab === 'oppo' ? 'ColorOS' : '',
-      });
-      setEditingPhone(null);
-      setShowNewBrandInput(false);
-      setShowForm(true);
-    }
+    setFormData({
+      ...INITIAL_FORM,
+      brand: activeTab === 'oppo' ? 'OPPO' : '',
+      os: activeTab === 'oppo' ? 'ColorOS' : '',
+    });
+    setEditingPhone(null);
+    setShowNewBrandInput(false);
+    setShowForm(true);
   };
 
   const handleBrandChange = (e) => {
@@ -156,7 +139,8 @@ export default function AdminPage() {
       if (res.ok) {
         const updated = await res.json();
         if (activeTab === 'oppo') setOppoPhones(updated);
-        else setCompPhones(updated);
+        else if (activeTab === 'competitors') setCompPhones(updated);
+        else setNaskahPhones(updated);
         setShowForm(false);
         showToast(editingPhone ? 'Model diperbarui' : 'Model ditambahkan');
       } else {
@@ -181,7 +165,8 @@ export default function AdminPage() {
       if (res.ok) {
         const updated = await res.json();
         if (activeTab === 'oppo') setOppoPhones(updated);
-        else setCompPhones(updated);
+        else if (activeTab === 'competitors') setCompPhones(updated);
+        else setNaskahPhones(updated);
         showToast('Model dihapus');
       }
     } catch (err) {
@@ -195,65 +180,12 @@ export default function AdminPage() {
     setShowForm(true);
   };
 
-  // Script handlers
-  const handleScriptSubmit = async (e) => {
-    e.preventDefault();
-    if (!scriptFormData.title?.trim() || !scriptFormData.content?.trim()) {
-      showToast('Judul dan isi naskah wajib diisi', 'error');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await fetch('/api/admin/scripts', {
-        method: editingScript ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingScript ? { ...scriptFormData, id: editingScript.id } : scriptFormData),
-      });
-      if (res.ok) {
-        const updated = await res.json(); // API returns full array (like phones)
-        setScripts(updated);
-        setShowForm(false);
-        showToast(editingScript ? 'Naskah diperbarui' : 'Naskah ditambahkan');
-      } else {
-        const err = await res.json();
-        throw new Error(err.error || 'Gagal menyimpan');
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleScriptDelete = async (id) => {
-    if (!confirm('Hapus naskah ini? Tindakan tidak bisa dibatalkan.')) return;
-    try {
-      const res = await fetch('/api/admin/scripts', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      if (res.ok) {
-        const updated = await res.json(); // API returns full array (like phones)
-        setScripts(updated);
-        showToast('Naskah dihapus');
-      }
-    } catch (err) {
-      showToast('Gagal hapus: ' + err.message, 'error');
-    }
-  };
-
-  const handleScriptEdit = (script) => {
-    setEditingScript(script);
-    setScriptFormData({ title: script.title, content: script.content });
-    setShowForm(true);
-  };
-
-  const phones = activeTab === 'oppo' ? oppoPhones : compPhones;
+  const phones = activeTab === 'oppo' ? oppoPhones : activeTab === 'competitors' ? compPhones : naskahPhones;
   const brands = [...new Set(compPhones.map(p => p.brand))].sort();
+  const naskahBrands = [...new Set(naskahPhones.map(p => p.brand))].sort();
   const oppoTypes = [...new Set(oppoPhones.map(p => p.type))].sort();
   const compTypesByBrand = (brand) => [...new Set(compPhones.filter(p => p.brand === brand).map(p => p.type))].sort();
+  const naskahTypesByBrand = (brand) => [...new Set(naskahPhones.filter(p => p.brand === brand).map(p => p.type))].sort();
 
   const filteredPhones = phones.filter(p =>
     p.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -279,7 +211,7 @@ export default function AdminPage() {
   const tabConfig = {
     oppo: { label: 'OPPO', icon: Smartphone, color: 'primary', bg: 'bg-primary/10 text-primary border-primary/30', hover: 'hover:bg-primary/20' },
     competitors: { label: 'Kompetitor', icon: Layers, color: 'secondary', bg: 'bg-secondary/10 text-secondary border-secondary/30', hover: 'hover:bg-secondary/20' },
-    scripts: { label: 'Naskah', icon: FileText, color: 'accent', bg: 'bg-accent/10 text-accent border-accent/30', hover: 'hover:bg-accent/20' },
+    naskah: { label: 'Naskah', icon: FileText, color: 'accent', bg: 'bg-accent/10 text-accent border-accent/30', hover: 'hover:bg-accent/20' },
   };
 
   return (
@@ -340,7 +272,7 @@ export default function AdminPage() {
               <cfg.icon className="w-4 h-4" aria-hidden="true" />
               {cfg.label}
               <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-white/10 backdrop-blur">
-                {key === 'oppo' ? oppoPhones.length : key === 'competitors' ? compPhones.length : scripts.length}
+                {key === 'oppo' ? oppoPhones.length : compPhones.length}
               </span>
             </motion.button>
           ))}
@@ -362,18 +294,12 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-lg font-bold flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                      {activeTab === 'scripts'
-                        ? (editingScript ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />)
-                        : (editingPhone ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />)}
+                      {editingPhone ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                     </div>
-                    {activeTab === 'scripts'
-                      ? (editingScript ? 'Edit' : 'Tambah') + ' Naskah'
-                      : (editingPhone ? 'Edit' : 'Tambah') + ' Model ' + (activeTab === 'oppo' ? 'OPPO' : 'Kompetitor')}
+                    {(editingPhone ? 'Edit' : 'Tambah') + ' Model ' + (activeTab === 'oppo' ? 'OPPO' : activeTab === 'competitors' ? 'Kompetitor' : 'Naskah')}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {activeTab === 'scripts'
-                      ? 'Isi judul dan isi naskah. Kedua field wajib diisi.'
-                      : 'Isi form di bawah. Field bintang (*) wajib diisi.'}
+                    Isi form di bawah. Field bintang (*) wajib diisi.
                   </p>
                 </div>
                 <button
@@ -385,218 +311,154 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {activeTab === 'scripts' ? (
-                // Script Form
-                <form onSubmit={handleScriptSubmit} className="space-y-5" noValidate>
-                  <div className="grid sm:grid-cols-1 gap-4">
-                    {/* Title */}
+              {/* Phone Form */}
+              <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {SPEC_FIELDS.map(field => (
                     <motion.div
+                      key={field.key}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: 0.05 }}
-                      className="sm:col-span-1"
+                      className={field.type === 'textarea' ? 'sm:col-span-2 lg:col-span-3' : ''}
                     >
                       <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
-                        Judul Naskah <span className="text-destructive" aria-hidden="true">*</span>
+                        {field.label}
+                        {field.required && <span className="text-destructive" aria-hidden="true">*</span>}
                       </label>
-                      <input
-                        type="text"
-                        name="title"
-                        value={scriptFormData.title || ''}
-                        onChange={e => setScriptFormData({ ...scriptFormData, title: e.target.value })}
-                        required
-                        placeholder="Contoh: Perkenalan OPPO Reno 16F"
-                        className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted-foreground/50"
-                      />
-                    </motion.div>
-
-                    {/* Content */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: 0.1 }}
-                      className="sm:col-span-1"
-                    >
-                      <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
-                        Isi Naskah <span className="text-destructive" aria-hidden="true">*</span>
-                      </label>
-                      <textarea
-                        name="content"
-                        value={scriptFormData.content || ''}
-                        onChange={e => setScriptFormData({ ...scriptFormData, content: e.target.value })}
-                        required
-                        rows={8}
-                        placeholder="Tulis isi naskah di sini..."
-                        className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-y placeholder:text-muted-foreground/50 font-mono text-sm"
-                      />
-                    </motion.div>
-                  </div>
-
-                  {/* Form Actions */}
-                  <div className="flex gap-3 justify-end pt-4 border-t border-border">
-                    <button
-                      type="button"
-                      onClick={() => setShowForm(false)}
-                      className="px-6 py-2.5 glass rounded-xl border border-border hover:bg-muted transition-all font-medium"
-                    >
-                      Batal
-                    </button>
-                    <motion.button
-                      type="submit"
-                      disabled={saving}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      className="px-6 py-2.5 glass-strong rounded-xl border border-primary/30 bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <Loader2 className={`w-4 h-4 ${saving ? 'animate-spin' : 'hidden'}`} />
-                      <Save className={`w-4 h-4 ${saving ? 'hidden' : ''}`} />
-                      {saving ? 'Menyimpan...' : (editingScript ? 'Update' : 'Simpan')}
-                    </motion.button>
-                  </div>
-                </form>
-              ) : (
-                // Phone Form (existing)
-                <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {SPEC_FIELDS.map(field => (
-                      <motion.div
-                        key={field.key}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: 0.05 }}
-                        className={field.type === 'textarea' ? 'sm:col-span-2 lg:col-span-3' : ''}
-                      >
-                        <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1">
-                          {field.label}
-                          {field.required && <span className="text-destructive" aria-hidden="true">*</span>}
-                        </label>
-                        {field.type === 'textarea' ? (
-                          <textarea
+                      {field.type === 'textarea' ? (
+                        <textarea
+                          name={field.key}
+                          value={formData[field.key] || ''}
+                          onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
+                          required={field.required}
+                          rows={3}
+                          placeholder={field.placeholder}
+                          className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-none placeholder:text-muted-foreground/50"
+                        />
+                      ) : field.key === 'brand' && (activeTab === 'competitors' || activeTab === 'naskah') ? (
+                        // Brand dropdown for competitors
+                        <div>
+                          {!showNewBrandInput ? (
+                            <select
+                              name={field.key}
+                              value={formData[field.key] || ''}
+                              onChange={handleBrandChange}
+                              required={field.required}
+                              className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
+                              style={{
+                                appearance: 'none',
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'none',
+                                backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 12px center',
+                                backgroundColor: 'transparent',
+                                paddingRight: '40px',
+                              }}
+                            >
+                              <option value="" disabled>Pilih Kategori</option>
+                              {(activeTab === 'competitors' ? brands : naskahBrands).map(b => <option key={b} value={b}>{b}</option>)}
+                              <option value="__new__">+ Kategori Baru...</option>
+                            </select>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                name={field.key}
+                                value={formData[field.key] || ''}
+                                onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
+                                required={field.required}
+                                placeholder="Nama brand baru"
+                                className="flex-1 px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted-foreground/50"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => { setShowNewBrandInput(false); setFormData({ ...formData, brand: '' }); }}
+                                className="px-3 py-3 glass rounded-xl border border-border hover:bg-muted transition-all text-muted-foreground"
+                                aria-label="Batal"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : field.key === 'brand' && activeTab === 'oppo' ? (
+                        // OPPO brand - readonly
+                        <div className="relative">
+                          <input
+                            type="text"
+                            name={field.key}
+                            value="OPPO"
+                            readOnly
+                            className="w-full px-4 py-3 glass-strong rounded-xl border border-border bg-muted/50 text-foreground cursor-not-allowed"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Fixed</span>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            type="text"
                             name={field.key}
                             value={formData[field.key] || ''}
                             onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
                             required={field.required}
-                            rows={3}
                             placeholder={field.placeholder}
-                            className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-none placeholder:text-muted-foreground/50"
-                          />
-                        ) : field.key === 'brand' && activeTab === 'competitors' ? (
-                          // Brand dropdown for competitors
-                          <div>
-                            {!showNewBrandInput ? (
-                              <select
-                                name={field.key}
-                                value={formData[field.key] || ''}
-                                onChange={handleBrandChange}
-                                required={field.required}
-                                className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
-                                style={{
-                                  appearance: 'none',
-                                  WebkitAppearance: 'none',
-                                  MozAppearance: 'none',
-                                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
-                                  backgroundRepeat: 'no-repeat',
-                                  backgroundPosition: 'right 12px center',
-                                  backgroundColor: 'transparent',
-                                  paddingRight: '40px',
-                                }}
-                              >
-                                <option value="" disabled>Pilih Brand</option>
-                                {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                                <option value="__new__">+ Brand Baru...</option>
-                              </select>
-                            ) : (
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  name={field.key}
-                                  value={formData[field.key] || ''}
-                                  onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                                  required={field.required}
-                                  placeholder="Nama brand baru"
-                                  className="flex-1 px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted-foreground/50"
-                                  autoFocus
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => { setShowNewBrandInput(false); setFormData({ ...formData, brand: '' }); }}
-                                  className="px-3 py-3 glass rounded-xl border border-border hover:bg-muted transition-all text-muted-foreground"
-                                  aria-label="Batal"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ) : field.key === 'brand' && activeTab === 'oppo' ? (
-                          // OPPO brand - readonly
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name={field.key}
-                              value="OPPO"
-                              readOnly
-                              className="w-full px-4 py-3 glass-strong rounded-xl border border-border bg-muted/50 text-foreground cursor-not-allowed"
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Fixed</span>
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name={field.key}
-                              value={formData[field.key] || ''}
-                              onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                              required={field.required}
-                              placeholder={field.placeholder}
-                              className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted-foreground/50"
-                              list={
-                                field.key === 'type' && activeTab === 'competitors' && formData.brand && formData.brand !== 'OPPO'
-                                  ? `${formData.brand}-types`
-                                  : field.key === 'type' && activeTab === 'oppo'
-                                    ? 'oppo-types'
+                            className="w-full px-4 py-3 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted-foreground/50"
+                            list={
+                              field.key === 'type' && activeTab === 'competitors' && formData.brand && formData.brand !== 'OPPO'
+                                ? `${formData.brand}-types`
+                                : field.key === 'type' && activeTab === 'oppo'
+                                  ? 'oppo-types'
+                                  : field.key === 'type' && activeTab === 'naskah' && formData.brand
+                                    ? `${formData.brand}-naskah-types`
                                     : undefined
-                              }
-                            />
-                            {field.key === 'type' && activeTab === 'competitors' && formData.brand && formData.brand !== 'OPPO' && (
-                              <datalist id={`${formData.brand}-types`}>
-                                {compTypesByBrand(formData.brand).map(t => <option key={t} value={t} />)}
-                              </datalist>
-                            )}
-                            {field.key === 'type' && activeTab === 'oppo' && (
-                              <datalist id="oppo-types">
-                                {oppoTypes.map(t => <option key={t} value={t} />)}
-                              </datalist>
-                            )}
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
+                            }
+                          />
+                          {field.key === 'type' && activeTab === 'competitors' && formData.brand && formData.brand !== 'OPPO' && (
+                            <datalist id={`${formData.brand}-types`}>
+                              {compTypesByBrand(formData.brand).map(t => <option key={t} value={t} />)}
+                            </datalist>
+                          )}
+                          {field.key === 'type' && activeTab === 'oppo' && (
+                            <datalist id="oppo-types">
+                              {oppoTypes.map(t => <option key={t} value={t} />)}
+                            </datalist>
+                          )}
+                          {field.key === 'type' && activeTab === 'naskah' && formData.brand && (
+                            <datalist id={`${formData.brand}-naskah-types`}>
+                              {naskahTypesByBrand(formData.brand).map(t => <option key={t} value={t} />)}
+                            </datalist>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
 
-                  {/* Form Actions */}
-                  <div className="flex gap-3 justify-end pt-4 border-t border-border">
-                    <button
-                      type="button"
-                      onClick={() => setShowForm(false)}
-                      className="px-6 py-2.5 glass rounded-xl border border-border hover:bg-muted transition-all font-medium"
-                    >
-                      Batal
-                    </button>
-                    <motion.button
-                      type="submit"
-                      disabled={saving}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      className="px-6 py-2.5 glass-strong rounded-xl border border-primary/30 bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <Loader2 className={`w-4 h-4 ${saving ? 'animate-spin' : 'hidden'}`} />
-                      <Save className={`w-4 h-4 ${saving ? 'hidden' : ''}`} />
-                      {saving ? 'Menyimpan...' : (editingPhone ? 'Update' : 'Simpan')}
-                    </motion.button>
-                  </div>
-                </form>
-              )}
+                {/* Form Actions */}
+                <div className="flex gap-3 justify-end pt-4 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="px-6 py-2.5 glass rounded-xl border border-border hover:bg-muted transition-all font-medium"
+                  >
+                    Batal
+                  </button>
+                  <motion.button
+                    type="submit"
+                    disabled={saving}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="px-6 py-2.5 glass-strong rounded-xl border border-primary/30 bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Loader2 className={`w-4 h-4 ${saving ? 'animate-spin' : 'hidden'}`} />
+                    <Save className={`w-4 h-4 ${saving ? 'hidden' : ''}`} />
+                    {saving ? 'Menyimpan...' : (editingPhone ? 'Update' : 'Simpan')}
+                  </motion.button>
+                </div>
+              </form>
             </motion.div>
           )}
         </AnimatePresence>
@@ -626,181 +488,110 @@ export default function AdminPage() {
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">
-                {activeTab === 'scripts' ? 'Tambah Naskah' : `Tambah ${activeTab === 'oppo' ? 'OPPO' : 'Kompetitor'}`}
+                Tambah {activeTab === 'oppo' ? 'OPPO' : activeTab === 'competitors' ? 'Kompetitor' : 'Naskah'}
               </span>
             </motion.button>
           </div>
 
           {/* Table - Phones */}
-          {activeTab !== 'scripts' && (
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full" role="grid">
-                <thead className="bg-muted/50 border-b border-border">
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full" role="grid">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-8"></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Model</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Tipe</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Brand</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Chipset</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">RAM/ROM</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Baterai</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-32">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {filteredPhones.length === 0 ? (
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-8"></th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Model</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Tipe</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Brand</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Chipset</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">RAM/ROM</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Baterai</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-32">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {filteredPhones.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-16 text-center">
-                        <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                          <div className="w-16 h-16 rounded-full glass border border-border/50 flex items-center justify-center">
-                            {activeTab === 'oppo' ? (
-                              <Smartphone className="w-8 h-8 text-primary" />
-                            ) : (
-                              <Layers className="w-8 h-8 text-secondary" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">Belum ada data</p>
-                            <p className="text-sm mt-1">Klik tombol <span className="text-primary font-semibold">Tambah</span> untuk memulai</p>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredPhones.map((phone, index) => (
-                      <motion.tr
-                        key={phone.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.03 }}
-                        className="hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                            <Smartphone className="w-4 h-4" />
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-foreground">{phone.model}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">{phone.type}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">
-                          {phone.brand && (
-                            <span className="px-2 py-0.5 glass rounded-full text-xs font-medium border border-border/50">
-                              {phone.brand}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">{phone.chipset}</td>
-                        <td className="px-4 py-3 text-sm hidden xl:table-cell">{phone.ramRom}</td>
-                        <td className="px-4 py-3 text-sm hidden xl:table-cell">{phone.baterai}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleEdit(phone)}
-                              className="p-2 glass rounded-lg hover:bg-primary/10 text-primary transition-all"
-                              aria-label={`Edit ${phone.model}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(phone.id)}
-                              className="p-2 glass rounded-lg hover:bg-destructive/10 text-destructive transition-all"
-                              aria-label={`Hapus ${phone.model}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Table - Scripts */}
-          {activeTab === 'scripts' && (
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full" role="grid">
-                <thead className="bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-8"></th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Judul</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Preview Isi</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-32">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {scripts.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-16 text-center">
-                        <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                          <div className="w-16 h-16 rounded-full glass border border-border/50 flex items-center justify-center">
+                    <td colSpan={8} className="px-4 py-16 text-center">
+                      <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                        <div className="w-16 h-16 rounded-full glass border border-border/50 flex items-center justify-center">
+                          {activeTab === 'oppo' ? (
+                            <Smartphone className="w-8 h-8 text-primary" />
+                          ) : activeTab === 'competitors' ? (
+                            <Layers className="w-8 h-8 text-secondary" />
+                          ) : (
                             <FileText className="w-8 h-8 text-accent" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">Belum ada naskah</p>
-                            <p className="text-sm mt-1">Klik tombol <span className="text-accent font-semibold">Tambah Naskah</span> untuk memulai</p>
-                          </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Belum ada data</p>
+                          <p className="text-sm mt-1">Klik tombol <span className="text-primary font-semibold">Tambah</span> untuk memulai</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPhones.map((phone, index) => (
+                    <motion.tr
+                      key={phone.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                          {activeTab === 'oppo' ? (
+                            <Smartphone className="w-4 h-4" />
+                          ) : activeTab === 'competitors' ? (
+                            <Layers className="w-4 h-4" />
+                          ) : (
+                            <FileText className="w-4 h-4" />
+                          )}
                         </div>
                       </td>
-                    </tr>
-                  ) : (
-                    scripts.map((script, index) => (
-                      <motion.tr
-                        key={script.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.03 }}
-                        className="hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
-                            <FileText className="w-4 h-4" />
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-foreground">{script.title}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell max-w-xs truncate">
-                          {script.content.substring(0, 80)}{script.content.length > 80 ? '...' : ''}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleScriptEdit(script)}
-                              className="p-2 glass rounded-lg hover:bg-accent/10 text-accent transition-all"
-                              aria-label={`Edit ${script.title}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleScriptDelete(script.id)}
-                              className="p-2 glass rounded-lg hover:bg-destructive/10 text-destructive transition-all"
-                              aria-label={`Hapus ${script.title}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      <td className="px-4 py-3 font-medium text-foreground">{phone.model}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">{phone.type}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">
+                        {phone.brand && (
+                          <span className="px-2 py-0.5 glass rounded-full text-xs font-medium border border-border/50">
+                            {phone.brand}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">{phone.chipset}</td>
+                      <td className="px-4 py-3 text-sm hidden xl:table-cell">{phone.ramRom}</td>
+                      <td className="px-4 py-3 text-sm hidden xl:table-cell">{phone.baterai}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(phone)}
+                            className="p-2 glass rounded-lg hover:bg-primary/10 text-primary transition-all"
+                            aria-label={`Edit ${phone.model}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(phone.id)}
+                            className="p-2 glass rounded-lg hover:bg-destructive/10 text-destructive transition-all"
+                            aria-label={`Hapus ${phone.model}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {/* Footer Stats */}
           <div className="p-4 sm:p-6 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            {activeTab === 'scripts' ? (
-              <span className="text-sm text-muted-foreground">
-                Total <span className="font-semibold text-foreground">{scripts.length}</span> naskah
-              </span>
-            ) : (
-              <span className="text-sm text-muted-foreground">
-                Menampilkan <span className="font-semibold text-foreground">{filteredPhones.length}</span> dari <span className="font-semibold text-foreground">{phones.length}</span> model
-              </span>
-            )}
-            {activeTab !== 'scripts' && filteredPhones.length !== phones.length && searchQuery && (
+            <span className="text-sm text-muted-foreground">
+              Menampilkan <span className="font-semibold text-foreground">{filteredPhones.length}</span> dari <span className="font-semibold text-foreground">{phones.length}</span> model
+            </span>
+            {filteredPhones.length !== phones.length && searchQuery && (
               <span className="text-xs text-accent bg-accent/10 px-2 py-1 rounded-full">
                 Difilter: "{searchQuery}"
               </span>
@@ -817,7 +608,7 @@ export default function AdminPage() {
           className="mt-8 mb-8 text-center"
         >
           <p className="text-sm text-muted-foreground">
-            Kelola database smartphone OPPO vs Kompetitor
+            Kelola database smartphone OPPO vs Kompetitor & Naskah
           </p>
           <p className="text-xs text-muted-foreground/70 mt-1">
             Create By Muhammad Ravi Maulana

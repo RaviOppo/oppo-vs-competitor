@@ -4,6 +4,7 @@ import { COMPETITOR_PHONES } from '../../../data/competitors';
 
 const TABLE_OPPO = 'oppo_phones';
 const TABLE_COMPETITORS = 'competitor_phones';
+const TABLE_NASAKAH = 'naskah';
 
 function mapOppoFromDb(row) {
   return {
@@ -47,6 +48,27 @@ function mapCompetitorFromDb(row) {
   };
 }
 
+function mapNaskahFromDb(row) {
+  return {
+    id: row.id,
+    brand: row.brand,
+    model: row.model,
+    type: row.type,
+    harga: row.harga,
+    rearCamera: row.rear_camera,
+    selfieCamera: row.selfie_camera,
+    layar: row.layar,
+    speaker: row.speaker,
+    baterai: row.baterai,
+    ramRom: row.ram_rom,
+    sertifikasi: row.sertifikasi,
+    chipset: row.chipset,
+    os: row.os,
+    aiFitur: row.ai_fitur,
+    fiturKamera: row.fitur_kamera,
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
@@ -60,6 +82,9 @@ export async function GET(request) {
     }
     if (category === 'competitors') {
       return Response.json(COMPETITOR_PHONES);
+    }
+    if (category === 'naskah') {
+      return Response.json([]);
     }
     return Response.json({ error: 'Invalid category' }, { status: 400 });
   }
@@ -81,6 +106,15 @@ export async function GET(request) {
       .order('model', { ascending: true });
     if (error) return Response.json({ error: error.message }, { status: 500 });
     return Response.json(data.map(mapCompetitorFromDb));
+  }
+
+  if (category === 'naskah') {
+    const { data, error } = await supabaseAdmin
+      .from(TABLE_NASAKAH)
+      .select('*')
+      .order('model', { ascending: true });
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+    return Response.json(data.map(mapNaskahFromDb));
   }
 
   return Response.json({ error: 'Invalid category' }, { status: 400 });

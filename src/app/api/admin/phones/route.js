@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { getOppoPhonesSync, getCompetitorPhonesSync, saveOppoPhones, saveCompetitorPhones, deleteOppoPhone, deleteCompetitorPhone } from '../../../../lib/data-server';
+import { getOppoPhonesSync, getCompetitorPhonesSync, getNaskahSync, saveOppoPhones, saveCompetitorPhones, saveNaskah, deleteOppoPhone, deleteCompetitorPhone, deleteNaskah } from '../../../../lib/data-server';
 import { OPPO_PHONES } from '../../../../data/oppo';
 import { COMPETITOR_PHONES } from '../../../../data/competitors';
 
@@ -23,15 +23,16 @@ export async function GET() {
   if (!session) return new Response('Unauthorized', { status: 401 });
 
   if (hasSupabase()) {
-    const [oppo, competitors] = await Promise.all([
+    const [oppo, competitors, naskah] = await Promise.all([
       getOppoPhonesSync(),
       getCompetitorPhonesSync(),
+      getNaskahSync(),
     ]);
-    return Response.json({ oppo, competitors });
+    return Response.json({ oppo, competitors, naskah });
   }
 
   // Fallback to static data
-  return Response.json({ oppo: getStaticOppo(), competitors: getStaticCompetitors() });
+  return Response.json({ oppo: getStaticOppo(), competitors: getStaticCompetitors(), naskah: [] });
 }
 
 export async function POST(request) {
@@ -49,7 +50,7 @@ export async function POST(request) {
       phones.push(phone);
       await saveOppoPhones(phones);
       return Response.json(phones);
-    } else {
+    } else if (category === 'competitors') {
       const phones = await getCompetitorPhonesSync();
       if (phones.find(p => p.id === phone.id)) {
         return Response.json({ error: 'ID sudah ada' }, { status: 400 });
@@ -57,6 +58,14 @@ export async function POST(request) {
       phones.push(phone);
       await saveCompetitorPhones(phones);
       return Response.json(phones);
+    } else if (category === 'naskah') {
+      const naskah = await getNaskahSync();
+      if (naskah.find(p => p.id === phone.id)) {
+        return Response.json({ error: 'ID sudah ada' }, { status: 400 });
+      }
+      naskah.push(phone);
+      await saveNaskah(naskah);
+      return Response.json(naskah);
     }
   }
 
@@ -76,10 +85,15 @@ export async function PUT(request) {
       const updated = phones.map(p => p.id === phone.id ? phone : p);
       await saveOppoPhones(updated);
       return Response.json(updated);
-    } else {
+    } else if (category === 'competitors') {
       const phones = await getCompetitorPhonesSync();
       const updated = phones.map(p => p.id === phone.id ? phone : p);
       await saveCompetitorPhones(updated);
+      return Response.json(updated);
+    } else if (category === 'naskah') {
+      const naskah = await getNaskahSync();
+      const updated = naskah.map(p => p.id === phone.id ? phone : p);
+      await saveNaskah(updated);
       return Response.json(updated);
     }
   }
@@ -98,10 +112,14 @@ export async function DELETE(request) {
       await deleteOppoPhone(id);
       const phones = await getOppoPhonesSync();
       return Response.json(phones);
-    } else {
+    } else if (category === 'competitors') {
       await deleteCompetitorPhone(id);
       const phones = await getCompetitorPhonesSync();
       return Response.json(phones);
+    } else if (category === 'naskah') {
+      await deleteNaskah(id);
+      const naskah = await getNaskahSync();
+      return Response.json(naskah);
     }
   }
 
