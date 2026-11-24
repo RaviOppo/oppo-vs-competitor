@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Edit, Save, X, Smartphone, LogOut,
-  Search, Loader2, CheckCircle2, AlertCircle, Layers, Home, FileText
+  Search, Loader2, CheckCircle2, AlertCircle, Layers, Home, FileText, BarChart3, Users, Activity, Calendar
 } from 'lucide-react';
 
 const SPEC_FIELDS = [
@@ -72,6 +72,32 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [showNewBrandInput, setShowNewBrandInput] = useState(false);
+  const [analyticsRange, setAnalyticsRange] = useState('7d');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // Fetch analytics data
+  const fetchAnalytics = useCallback(async () => {
+    if (!session) return;
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/analytics?range=${analyticsRange}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } catch (err) {
+      console.error('Analytics fetch error:', err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [session, analyticsRange]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchAnalytics();
+    }
+  }, [activeTab, fetchAnalytics]);
 
   // Fetch data on session change
   useEffect(() => {
@@ -229,6 +255,7 @@ export default function AdminPage() {
     oppo: { label: 'OPPO', icon: Smartphone, color: 'primary', bg: 'bg-primary/10 text-primary border-primary/30', hover: 'hover:bg-primary/20' },
     competitors: { label: 'Kompetitor', icon: Layers, color: 'secondary', bg: 'bg-secondary/10 text-secondary border-secondary/30', hover: 'hover:bg-secondary/20' },
     naskah: { label: 'Naskah', icon: FileText, color: 'accent', bg: 'bg-accent/10 text-accent border-accent/30', hover: 'hover:bg-accent/20' },
+    analytics: { label: 'Analytics', icon: BarChart3, color: 'emerald', bg: 'bg-emerald/10 text-emerald border-emerald/30', hover: 'hover:bg-emerald/20' },
   };
 
   return (
@@ -541,39 +568,255 @@ export default function AdminPage() {
           )}
         </AnimatePresence>
 
-        {/* Table Section */}
-        <div className="glass-strong rounded-2xl border border-border/50 overflow-hidden flex-1 flex flex-col">
-          {/* Toolbar */}
-          <div className="p-4 sm:p-6 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                <input
-                  type="search"
-                  placeholder="Cari model, tipe, brand..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm placeholder:text-muted-foreground/50"
-                  aria-label="Cari smartphone"
-                />
+        {/* Analytics Section */}
+        {activeTab === 'analytics' && (
+          <div className="glass-strong rounded-2xl border border-border/50 overflow-hidden flex-1 flex flex-col">
+            {/* Toolbar */}
+            <div className="p-4 sm:p-6 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
+                <div className="relative w-full sm:w-48">
+                  <select
+                    value={analyticsRange}
+                    onChange={e => setAnalyticsRange(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm appearance-none cursor-pointer"
+                    style={{
+                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundColor: 'transparent',
+                      paddingRight: '40px',
+                    }}
+                  >
+                    <option value="7d">7 Hari Terakhir</option>
+                    <option value="30d">30 Hari Terakhir</option>
+                    <option value="90d">90 Hari Terakhir</option>
+                    <option value="all">Semua Waktu</option>
+                  </select>
+                </div>
               </div>
+              <motion.button
+                onClick={fetchAnalytics}
+                disabled={analyticsLoading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2.5 glass-strong rounded-xl border border-emerald/30 bg-emerald/10 text-emerald font-medium hover:bg-emerald/20 transition-all flex items-center gap-2 w-full sm:w-auto disabled:opacity-50"
+              >
+                <Loader2 className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : 'hidden'}`} />
+                <Activity className={`w-4 h-4 ${analyticsLoading ? 'hidden' : ''}`} />
+                {analyticsLoading ? 'Memuat...' : 'Refresh'}
+              </motion.button>
             </div>
-            <motion.button
-              onClick={resetForm}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-4 py-2.5 glass-strong rounded-xl border border-primary/30 bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-all flex items-center gap-2 w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                Tambah {activeTab === 'oppo' ? 'OPPO' : activeTab === 'competitors' ? 'Kompetitor' : 'Naskah'}
-              </span>
-            </motion.button>
-          </div>
 
-          {/* Table - Phones */}
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full" role="grid">
+            {/* Analytics Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {analyticsLoading && !analyticsData ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : analyticsData ? (
+                <>
+                  {/* Summary Cards */}
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <SummaryCard
+                      icon={Users}
+                      label="Unique Users"
+                      value={analyticsData.summary.unique_users}
+                      color="primary"
+                    />
+                    <SummaryCard
+                      icon={Activity}
+                      label="Total Visits"
+                      value={analyticsData.summary.total_visits}
+                      color="secondary"
+                    />
+                    <SummaryCard
+                      icon={BarChart3}
+                      label="Page Views"
+                      value={analyticsData.summary.page_views}
+                      color="accent"
+                    />
+                    <SummaryCard
+                      icon={Calendar}
+                      label="Logins"
+                      value={analyticsData.summary.logins}
+                      color="emerald"
+                    />
+                  </div>
+
+                  {/* Top Users Table */}
+                  <div className="glass rounded-xl border border-border/50 p-4 mb-6">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary" />
+                      Top Users by Activity
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <th className="px-4 py-3">Rank</th>
+                            <th className="px-4 py-3">Username (WIT)</th>
+                            <th className="px-4 py-3 hidden sm:table-cell">Total Visits</th>
+                            <th className="px-4 py-3 hidden sm:table-cell">Logins</th>
+                            <th className="px-4 py-3 hidden md:table-cell">Page Views</th>
+                            <th className="px-4 py-3 hidden lg:table-cell">Paths Visited</th>
+                            <th className="px-4 py-3 hidden lg:table-cell">Last Visit</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50">
+                          {analyticsData.top_users.slice(0, 20).map((user, idx) => (
+                            <tr key={user.username} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3 font-medium text-primary">{idx + 1}</td>
+                              <td className="px-4 py-3 font-medium text-foreground">{user.username}</td>
+                              <td className="px-4 py-3 hidden sm:table-cell">{user.total_visits}</td>
+                              <td className="px-4 py-3 hidden sm:table-cell text-emerald">{user.logins}</td>
+                              <td className="px-4 py-3 hidden md:table-cell text-blue-400">{user.page_views}</td>
+                              <td className="px-4 py-3 hidden lg:table-cell">{user.paths_visited}</td>
+                              <td className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground">
+                                {new Date(user.last_visit).toLocaleString('id-ID', {
+                                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </td>
+                            </tr>
+                          ))}
+                          {analyticsData.top_users.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                                Belum ada data kunjungan untuk periode ini
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Daily Chart & Top Paths */}
+                  <div className="grid lg:grid-cols-2 gap-6">
+                    {/* Daily Activity */}
+                    <div className="glass rounded-xl border border-border/50 p-4">
+                      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-secondary" />
+                        Daily Activity ({analyticsData.summary.period})
+                      </h3>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {analyticsData.daily.slice(-14).map(day => (
+                          <DailyBar key={day.date} day={day} maxTotal={Math.max(...analyticsData.daily.map(d => d.total), 1)} />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Top Paths */}
+                    <div className="glass rounded-xl border border-border/50 p-4">
+                      <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-accent" />
+                        Most Visited Pages
+                      </h3>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {analyticsData.top_paths.length > 0 ? (
+                          analyticsData.top_paths.map((path, idx) => (
+                            <PathRow key={path.path} path={path} rank={idx + 1} maxCount={analyticsData.top_paths[0].count} />
+                          ))
+                        ) : (
+                          <p className="text-center text-muted-foreground py-8">Belum ada data halaman</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Visits */}
+                  <div className="glass rounded-xl border border-border/50 p-4 mt-6">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-emerald" />
+                      Recent Visits (Last 50)
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <th className="px-4 py-2">Time</th>
+                            <th className="px-4 py-2">User</th>
+                            <th className="px-4 py-2">Event</th>
+                            <th className="px-4 py-2 hidden md:table-cell">Path</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50">
+                          {analyticsData.recent_visits.map((visit, idx) => (
+                            <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-2 text-sm text-muted-foreground">
+                                {new Date(visit.created_at).toLocaleString('id-ID', {
+                                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit'
+                                })}
+                              </td>
+                              <td className="px-4 py-2 text-sm font-medium text-foreground">{visit.username}</td>
+                              <td className="px-4 py-2">
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                  visit.event_type === 'login'
+                                    ? 'bg-emerald/20 text-emerald'
+                                    : 'bg-blue-500/20 text-blue-400'
+                                }`}>
+                                  {visit.event_type === 'login' ? 'Login' : 'Page View'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 text-sm text-muted-foreground hidden md:table-cell">
+                                {visit.path || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                          {analyticsData.recent_visits.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                                Belum ada kunjungan tercatat
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground">
+                  <p>Klik Refresh untuk memuat data analytics</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Table Section (for phone tabs) */}
+        {activeTab !== 'analytics' && (
+          <div className="glass-strong rounded-2xl border border-border/50 overflow-hidden flex-1 flex flex-col">
+            {/* Toolbar */}
+            <div className="p-4 sm:p-6 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  <input
+                    type="search"
+                    placeholder="Cari model, tipe, brand..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 glass-strong rounded-xl border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm placeholder:text-muted-foreground/50"
+                    aria-label="Cari smartphone"
+                  />
+                </div>
+              </div>
+              <motion.button
+                onClick={resetForm}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2.5 glass-strong rounded-xl border border-primary/30 bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-all flex items-center gap-2 w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  Tambah {activeTab === 'oppo' ? 'OPPO' : activeTab === 'competitors' ? 'Kompetitor' : 'Naskah'}
+                </span>
+              </motion.button>
+            </div>
+
+            {/* Table - Phones */}
+            <div className="overflow-x-auto flex-1">
+              <table className="w-full" role="grid">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider w-8"></th>
@@ -720,6 +963,7 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+        )}
       </main>
 
         {/* Footer */}
@@ -755,6 +999,66 @@ export default function AdminPage() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// Analytics helper components
+function SummaryCard({ icon: Icon, label, value, color }) {
+  const colorMap = {
+    primary: 'bg-primary/10 text-primary border-primary/20',
+    secondary: 'bg-secondary/10 text-secondary border-secondary/20',
+    accent: 'bg-accent/10 text-accent border-accent/20',
+    emerald: 'bg-emerald/10 text-emerald border-emerald/20',
+  };
+  return (
+    <div className={`glass rounded-xl border p-4 ${colorMap[color] || colorMap.primary}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-bold mt-1">{value?.toLocaleString?.() || 0}</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DailyBar({ day, maxTotal }) {
+  const width = Math.max((day.total / maxTotal) * 100, day.total > 0 ? 8 : 0);
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-muted-foreground w-20 shrink-0">
+        {new Date(day.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+      </span>
+      <div className="flex-1 h-3 glass rounded-full overflow-hidden relative">
+        <div
+          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-300"
+          style={{ width: `${width}%` }}
+        />
+      </div>
+      <span className="text-xs font-medium text-foreground w-16 text-right">{day.total}</span>
+    </div>
+  );
+}
+
+function PathRow({ path, rank, maxCount }) {
+  const width = Math.max((path.count / maxCount) * 100, path.count > 0 ? 8 : 0);
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs font-medium text-primary w-6">{rank}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-foreground truncate">{path.path}</p>
+        <div className="h-2 glass rounded-full overflow-hidden mt-1">
+          <div
+            className="h-full bg-gradient-to-r from-accent to-primary rounded-full transition-all duration-300"
+            style={{ width: `${width}%` }}
+          />
+        </div>
+      </div>
+      <span className="text-xs text-muted-foreground w-12 text-right">{path.count}</span>
     </div>
   );
 }

@@ -102,6 +102,26 @@ CREATE POLICY "Public read scripts" ON scripts
 --   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.jwt() ->> 'role' = 'admin');
 
 -- ===========================================
+-- Visits Table (for analytics)
+-- ===========================================
+CREATE TABLE IF NOT EXISTS visits (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT REFERENCES users(id),
+  username TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('login', 'page_view')),
+  path TEXT,
+  user_agent TEXT,
+  ip_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_visits_user_id ON visits(user_id);
+CREATE INDEX IF NOT EXISTS idx_visits_username ON visits(username);
+CREATE INDEX IF NOT EXISTS idx_visits_event_type ON visits(event_type);
+CREATE INDEX IF NOT EXISTS idx_visits_created_at ON visits(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_visits_user_created ON visits(user_id, created_at DESC);
+
+-- ===========================================
 -- Indexes for performance
 -- ===========================================
 CREATE INDEX IF NOT EXISTS idx_oppo_phones_model ON oppo_phones(model);

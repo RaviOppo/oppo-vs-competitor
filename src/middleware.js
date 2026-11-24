@@ -1,5 +1,36 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase';
+
+async function trackPageView(req, token) {
+  try {
+    const supabase = getSupabaseAdmin();
+    if (!supabase || !token) return;
+
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || 'unknown';
+    const ipHash = Buffer.from(ip).toString('base64').slice(0, 16);
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const path = req.nextUrl.pathname;
+
+    // Don't track static assets, api routes, or login pages
+    if (path.startsWith('/_next') || path.startsWith('/api') || path === '/login' || path === '/admin/login') {
+      return;
+    }
+
+    await supabase.from('visits').insert({
+      user_id: token.sub,
+      username: token.name,
+      event_type: 'page_view',
+      path,
+      user_agent: userAgent,
+      ip_hash: ipHash,
+    });
+  } catch (err) {
+    console.error('Track page view error:', err.message);
+  }
+}
 
 export default withAuth(
   function middleware(req) {
@@ -9,6 +40,11 @@ export default withAuth(
     // Skip middleware during build/prerender (no valid URL)
     if (!req.url || req.url.includes('undefined')) {
       return NextResponse.next();
+    }
+
+    // Track page view for authenticated users (fire and forget)
+    if (token) {
+      trackPageView(req, token);
     }
 
     // Allow user login page without auth
